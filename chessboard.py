@@ -11,19 +11,26 @@ class Chessboard:
                 if cls._instance is None:
                     cls._instance = super(Chessboard, cls).__new__(cls)
                     cls._instance.size = size
-                    cls._instance.board = [[' ' for _ in range(size)] for _ in range(size)]
+                    cls._instance.board = [[None for _ in range(size)] for _ in range(size)]
+        else:
+            raise ValueError("Chessboard instance already created.")
         return cls._instance
-    
-    def is_valid_size(size_str):
-        if not size_str.isdigit():
-            return False
-        size = int(size_str)
-        return 8 <= size <= 19
 
-    def display(self):
-        print("Current board:")
-        horizontal_line = ''.join(['--' for i in range(self._instance.size)]) + '-'
-        print(horizontal_line)
-        for row in self.board:
-            print('|' + '|'.join(row + [' ']))
-            print(horizontal_line)
+    @staticmethod
+    def get_instance():
+        if Chessboard._instance is None:
+            raise Exception("Chessboard has not been initialized yet.")
+        return Chessboard._instance
+    
+    def get_size(self):
+        return self.size
+        
+    def set_size(self, size):
+        self.size = size
+        self.board = [[None for _ in range(size)] for _ in range(size)]
+
+    def set_chess(self, row, col, chess_type):
+        self.board[row][col] = chess_type
+        
+    def get_chess(self, row, col):
+        return self.board[row][col]
