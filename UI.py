@@ -13,12 +13,10 @@ class UITemplate(ABC):
         
         self.FONT = pygame.font.SysFont(None, 40)
         
-        self.screen = pygame.display.set_mode((1100, 820))
-        self.screen_width, self.screen_height = self.screen.get_width(), self.screen.get_height()
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Chess Game Platform")
-        self.background_image = pygame.transform.scale(pygame.image.load("pics/backgroud.jpeg"), (self.screen_width, self.screen_height))
-
-        self.button_choose_size = None
+        self.background_image = pygame.transform.scale(pygame.image.load("pics/backgroud.jpeg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
+        
         
     def detect_event(self): # 检查鼠标/键盘事件
         event = pygame.event.get()
@@ -33,7 +31,7 @@ class UITemplate(ABC):
                 return pygame.MOUSEBUTTONDOWN, pygame.mouse.get_pos()
         
     
-    def draw_button(self, text, left, top, width, height, bg_color=WHITE, text_color=BLACK, update=True):
+    def draw_button(self, text, left, top, width=BUTTON_WIDTH, height=BUTTON_HEIGHT, bg_color=WHITE, text_color=BLACK, update=True) -> pygame.Rect:
         button = pygame.Rect(left, top, width, height)
         pygame.draw.rect(self.screen, bg_color, button)
         text_rendered = self.FONT.render(text, True, text_color)
@@ -45,17 +43,21 @@ class UITemplate(ABC):
         return button
     
     
-    def display_message(self, text, color=RED):
+    def display_message(self, text, color=RED, left=None, top=None):
         message = self.FONT.render(text, True, color)
-        self.screen.blit(message, (self.screen_width // 2 - message.get_width() // 2, self.screen_height // 3))
+        if left is None:
+            left = SCREEN_WIDTH // 2 - message.get_width() // 2
+        if top is None:
+            top = SCREEN_HEIGHT // 3
+        self.screen.blit(message, (left, top))
 
 
     def choose_game(self):
         self.display_message("Choose a Game")
         
         while True:
-            self.button_gomoku = self.draw_button("Gomoku", self.screen_width // 2 - BUTTON_WIDTH // 2, 330, BUTTON_WIDTH, BUTTON_HEIGHT)
-            self.button_go = self.draw_button("Go", self.screen_width // 2 - BUTTON_WIDTH // 2, 400, BUTTON_WIDTH, BUTTON_HEIGHT)
+            button_gomoku = self.draw_button("Gomoku", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, BUTTON_TOP, BUTTON_WIDTH, BUTTON_HEIGHT)
+            button_go = self.draw_button("Go", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, BUTTON_TOP + BUTTON_INTERVAL, BUTTON_WIDTH, BUTTON_HEIGHT)
             pygame.display.flip()
             
             event = self.detect_event()
@@ -63,24 +65,24 @@ class UITemplate(ABC):
                 event_type, event_val = event
                 if event_type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = event_val
-                if self.button_gomoku.collidepoint(mouse_pos):
+                if button_gomoku.collidepoint(mouse_pos):
                     return "Gomoku"
-                elif self.button_go.collidepoint(mouse_pos):
+                elif button_go.collidepoint(mouse_pos):
                     return "Go"
                     
     def choose_board_size(self):
-        self.button_choose_size = self.draw_button("Choose board size", self.screen_width // 2 - BUTTON_WIDTH // 2, 150, BUTTON_WIDTH, BUTTON_HEIGHT, bg_color=BLACK, text_color=WHITE)
+        button_choose_size = self.draw_button("Choose board size", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, 150, bg_color=BLACK, text_color=WHITE)
         display_options = False
         size_options = [str(i) for i in range(8, 20)]
         
         while True:
             self.screen.fill(BLACK)
   
-            self.button_choose_size = self.draw_button("Choose board size", self.screen_width // 2 - 1.5 * BUTTON_WIDTH // 2, 150, 1.5 * BUTTON_WIDTH, BUTTON_HEIGHT, update=False)
+            button_choose_size = self.draw_button("Choose board size", SCREEN_WIDTH // 2 - 1.5 * BUTTON_WIDTH // 2, 150, width=1.5 * BUTTON_WIDTH, update=False)
             
             if display_options:
                 for index, option in enumerate(size_options):
-                    self.draw_button(option, self.screen_width // 2 - BUTTON_WIDTH // 2, 220 + (index * (OPTION_HEIGHT + 5)), BUTTON_WIDTH, OPTION_HEIGHT, update=False)
+                    self.draw_button(option, SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, 220 + (index * (OPTION_HEIGHT + 5)), height=OPTION_HEIGHT, update=False)
             
             pygame.display.flip()
             
@@ -90,12 +92,12 @@ class UITemplate(ABC):
                 if event_type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = event_val
                     
-                    if self.button_choose_size.collidepoint(mouse_pos):
+                    if button_choose_size.collidepoint(mouse_pos):
                         display_options = not display_options
                         
                     if display_options:
                         for index, option in enumerate(size_options):
-                            button_option = self.draw_button(option, self.screen_width // 2 - BUTTON_WIDTH // 2, 220 + (index * (OPTION_HEIGHT + 5)), BUTTON_WIDTH, OPTION_HEIGHT, update=False)
+                            button_option = self.draw_button(option, SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, 220 + (index * (OPTION_HEIGHT + 5)), update=False)
                             if button_option.collidepoint(mouse_pos):
                                 return int(option)
                             
@@ -112,23 +114,23 @@ class UITemplate(ABC):
                 if event_type == pygame.KEYDOWN:
                     key = event_val
                     if key == pygame.K_RETURN:
-                        button_new_game = self.draw_button("New Game", self.screen_width // 2 - BUTTON_WIDTH // 2, 330, BUTTON_WIDTH, BUTTON_HEIGHT, WHITE)
-                        button_end_game = self.draw_button("Exit", self.screen_width // 2 - BUTTON_WIDTH // 2, 400, BUTTON_WIDTH, BUTTON_HEIGHT, WHITE)
+                        button_new_game = self.draw_button("New Game", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, BUTTON_TOP)
+                        button_end_game = self.draw_button("Exit", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, 400)
                         massage_disabled = self.display_message(f"{winner.upper()} win! Press ENTER to continue." if winner else "Draw!", color=BLACK)
                 
                 if button_new_game is not None and button_end_game is not None:
                     if event_type == pygame.MOUSEBUTTONDOWN:
                         mouse_pos = event_val
                         if button_new_game.collidepoint(mouse_pos):
-                            button_new_game_disabled = self.draw_button("", self.screen_width // 2 - BUTTON_WIDTH // 2, 330, BUTTON_WIDTH, BUTTON_HEIGHT, BLACK)
-                            button_end_game_disabled = self.draw_button("", self.screen_width // 2 - BUTTON_WIDTH // 2, 400, BUTTON_WIDTH, BUTTON_HEIGHT, BLACK)
+                            button_new_game_disabled = self.draw_button("", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, BUTTON_TOP, bg_color=BLACK)
+                            button_end_game_disabled = self.draw_button("", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, 400, bg_color=BLACK)
                             return 
                         elif button_end_game.collidepoint(mouse_pos):
                             pygame.quit()
                             exit()
             pygame.display.flip()      
                 
-    def display_chessboard(self, chessboard: Chessboard):
+    def display_chessboard(self, chessboard: Chessboard, turn: str):
         self.screen.blit(self.background_image, (0, 0))
 
         for row in range(1, chessboard.get_size() + 1):
@@ -144,8 +146,15 @@ class UITemplate(ABC):
                     pygame.draw.circle(self.screen, BLACK, (GRID_SIZE * (col + 1), GRID_SIZE * (row + 1)), CHESS_RADIUS)
                 elif curr_chess == "WHITE":
                     pygame.draw.circle(self.screen, WHITE, (GRID_SIZE * (col + 1), GRID_SIZE * (row + 1)), CHESS_RADIUS)
+                    
+        message_turn = self.display_message(f"{turn}'s Turn.", left=COMMON_BUTTON_LEFT, top=GRID_SIZE, color=WHITE if turn=="WHITE" else BLACK)
+                    
+        self.button_admit_defeat = self.draw_button("Admit Defeat", COMMON_BUTTON_LEFT, GRID_SIZE + BUTTON_INTERVAL, update=False)
                 
         pygame.display.flip()
+        
+    def admit_defeat(self, mouse_pos: tuple[int, int]):
+        return self.button_admit_defeat.collidepoint(mouse_pos)
                     
 
 # 具体产品（五子棋UI）

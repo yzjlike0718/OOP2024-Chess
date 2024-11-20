@@ -22,6 +22,7 @@ class GameRule(ABC):
 # 具体策略类：五子棋规则
 class GomokuRule(GameRule):
     def is_valid_move(self, row, col, board, curr_turn):
+        print(f"GomokuRule is_valid_move row={row}, col={col}")
         return self.is_within_board(row, col, board) and board.get_chess(row=row, col=col) is None
 
     def is_within_board(self, row, col, board):
@@ -103,6 +104,7 @@ class GoRule(GameRule):
         board.set_chess(row, col, None)
                
     def is_valid_move(self, row, col, board, curr_turn):
+        print(f"GoRule is_valid_move row={row}, col={col}, curr_turn={curr_turn}")
         if not self.is_within_board(row, col, board):
             return False
         if board.get_chess(row=row, col=col) is not None:
@@ -126,6 +128,7 @@ class GoRule(GameRule):
         return 0 <= row < board.get_size() and 0 <= col < board.get_size()
 
     def check_win(self, board):
+        print(f"Go check_win, board: {board.get_instance().board}")
         black_points = 0
         white_points = 0
         visited = [[False for _ in range(board.get_size())] for _ in range(board.get_size())]
@@ -166,10 +169,10 @@ class GoRule(GameRule):
                     # 计算白棋占据的点
                     territory = dfs(r, c, "WHITE")
                     white_points += len(territory)
-        
+        print(f"black_points: {black_points}, white_points: {white_points}")
         if black_points > white_points:
             return "BLACK"
-        else:
+        elif white_points > black_points:
             return "WHITE"
     
     def check_draw(self, board):

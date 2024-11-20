@@ -16,6 +16,7 @@ class Client():
         self.game: Game = None
         self.UI_factory: UIFactory = None
         self.UI_platform: UITemplate = UITemplate()
+        self.winner: str = None
         
     def choose_game(self):
         self.game_name = self.UI_platform.choose_game()
@@ -42,6 +43,7 @@ class Client():
     def play_game(self): # TODO: 考虑作为模板方法
         self.game_over = False
         self.turn = "BALCK"
+        self.winner = None
         self.choose_game()
         self.set_game()
         self.init_board()
@@ -55,15 +57,19 @@ class Client():
                     row = round((y - GRID_SIZE) / GRID_SIZE)
                     if self.game.rule.is_valid_move(row, col, self.chessboard, self.turn):
                         self.chessboard.set_chess(row=row, col=col, chess_type=self.turn)
-                        self.turn = "WHITE" if self.turn == "BALCK" else "BALCK"
 
-                        winner = self.game.rule.check_win(self.chessboard)
-                        if winner:
-                            self.UI_platform.show_winner(winner)
+                        self.winner = self.game.rule.check_win(self.chessboard)
+                        if self.winner:
+                            self.UI_platform.show_winner(self.winner)
                             self.play_game()
                         elif self.game.rule.check_draw(self.chessboard):
                             self.UI_platform.show_winner(None)
                             self.play_game()
+                    elif self.UI_platform.admit_defeat(mouse_pos=event_val):
+                        self.winner = "WHITE" if self.turn == "BALCK" else "BALCK"
+                        self.UI_platform.show_winner(self.winner)
+                        self.play_game()
 
-            self.UI_platform.display_chessboard(self.chessboard)
+                    self.turn = "WHITE" if self.turn == "BALCK" else "BALCK"
+            self.UI_platform.display_chessboard(self.chessboard, self.turn)
             
