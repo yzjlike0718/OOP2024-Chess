@@ -165,7 +165,7 @@ class Client():
                     x, y = event.pos
                     col = round((x - GRID_SIZE) / GRID_SIZE)
                     row = round((y - GRID_SIZE) / GRID_SIZE)
-                    if self.game.rule.is_valid_move(row, col, self.chessboard):
+                    if self.game.rule.is_valid_move(row, col, self.chessboard, self.turn):
                         self.chessboard.set_chess(row=row, col=col, chess_type=self.turn)
                         self.turn = "WHITE" if self.turn == "BALCK" else "BALCK"
                         self.display()
