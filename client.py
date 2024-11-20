@@ -9,6 +9,7 @@ from UI import *
 
 class Client():
     def __init__(self):
+        self.chessboard: Chessboard = None
         self.game_name: str = None
         self.game_over: bool = True
         self.turn: str = "BALCK"
@@ -68,6 +69,8 @@ class Client():
                     elif self.UI_platform.admit_defeat(mouse_pos=event_val):
                         self.winner = "WHITE" if self.turn == "BALCK" else "BALCK"
                         self.UI_platform.show_winner(self.winner)
+                        self.play_game()
+                    elif self.UI_platform.restart(mouse_pos=event_val):
                         self.play_game()
 
                     self.turn = "WHITE" if self.turn == "BALCK" else "BALCK"
