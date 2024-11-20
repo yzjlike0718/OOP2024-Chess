@@ -19,6 +19,19 @@ class UITemplate(ABC):
         self.background_image = pygame.transform.scale(pygame.image.load("pics/backgroud.jpeg"), (self.screen_width, self.screen_height))
 
         self.button_choose_size = None
+        
+    def detect_event(self): # 检查鼠标/键盘事件
+        event = pygame.event.get()
+        if len(event) > 0:
+            event = event[0]
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                return pygame.KEYDOWN, event.key
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                return pygame.MOUSEBUTTONDOWN, pygame.mouse.get_pos()
+        
     
     def draw_button(self, text, left, top, width, height, bg_color=WHITE, text_color=BLACK, update=True):
         button = pygame.Rect(left, top, width, height)
@@ -45,16 +58,15 @@ class UITemplate(ABC):
             self.button_go = self.draw_button("Go", self.screen_width // 2 - BUTTON_WIDTH // 2, 400, BUTTON_WIDTH, BUTTON_HEIGHT)
             pygame.display.flip()
             
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = pygame.mouse.get_pos()
-                    if self.button_gomoku.collidepoint(mouse_pos):
-                        return "Gomoku"
-                    elif self.button_go.collidepoint(mouse_pos):
-                        return "Go"
+            event = self.detect_event()
+            if event is not None:
+                event_type, event_val = event
+                if event_type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = event_val
+                if self.button_gomoku.collidepoint(mouse_pos):
+                    return "Gomoku"
+                elif self.button_go.collidepoint(mouse_pos):
+                    return "Go"
                     
     def choose_board_size(self):
         self.button_choose_size = self.draw_button("Choose board size", self.screen_width // 2 - BUTTON_WIDTH // 2, 150, BUTTON_WIDTH, BUTTON_HEIGHT, bg_color=BLACK, text_color=WHITE)
@@ -72,12 +84,11 @@ class UITemplate(ABC):
             
             pygame.display.flip()
             
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    mouse_pos = pygame.mouse.get_pos()
+            event = self.detect_event()
+            if event is not None:
+                event_type, event_val = event
+                if event_type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = event_val
                     
                     if self.button_choose_size.collidepoint(mouse_pos):
                         display_options = not display_options
@@ -95,27 +106,22 @@ class UITemplate(ABC):
         button_new_game = button_end_game = None
         
         while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
-                    
-                if event.type == pygame.KEYDOWN:
-                    # 检测 Enter 键
-                    if event.key == pygame.K_RETURN:
-                        button_new_game = self.draw_button("New Game", self.screen_width // 2 - BUTTON_WIDTH // 2, 400, BUTTON_WIDTH, BUTTON_HEIGHT, WHITE)
-                        button_end_game = self.draw_button("Exit", self.screen_width // 2 - BUTTON_WIDTH // 2, 470, BUTTON_WIDTH, BUTTON_HEIGHT, WHITE)
-                        
-                        # pygame.display.flip()
+            event = self.detect_event()
+            if event is not None:
+                event_type, event_val = event
+                if event_type == pygame.KEYDOWN:
+                    key = event_val
+                    if key == pygame.K_RETURN:
+                        button_new_game = self.draw_button("New Game", self.screen_width // 2 - BUTTON_WIDTH // 2, 330, BUTTON_WIDTH, BUTTON_HEIGHT, WHITE)
+                        button_end_game = self.draw_button("Exit", self.screen_width // 2 - BUTTON_WIDTH // 2, 400, BUTTON_WIDTH, BUTTON_HEIGHT, WHITE)
+                        massage_disabled = self.display_message(f"{winner.upper()} win! Press ENTER to continue." if winner else "Draw!", color=BLACK)
                 
                 if button_new_game is not None and button_end_game is not None:
-                    if event.type == pygame.MOUSEBUTTONDOWN:
-                        mouse_pos = pygame.mouse.get_pos()
-
+                    if event_type == pygame.MOUSEBUTTONDOWN:
+                        mouse_pos = event_val
                         if button_new_game.collidepoint(mouse_pos):
-                            button_new_game_disabled = self.draw_button("", self.screen_width // 2 - BUTTON_WIDTH // 2, 400, BUTTON_WIDTH, BUTTON_HEIGHT, BLACK)
-                            button_end_game_disabled = self.draw_button("", self.screen_width // 2 - BUTTON_WIDTH // 2, 470, BUTTON_WIDTH, BUTTON_HEIGHT, BLACK)
-                            massage_disabled = self.display_message(f"{winner.upper()} win! Press ENTER to continue." if winner else "Draw!", color=BLACK)
+                            button_new_game_disabled = self.draw_button("", self.screen_width // 2 - BUTTON_WIDTH // 2, 330, BUTTON_WIDTH, BUTTON_HEIGHT, BLACK)
+                            button_end_game_disabled = self.draw_button("", self.screen_width // 2 - BUTTON_WIDTH // 2, 400, BUTTON_WIDTH, BUTTON_HEIGHT, BLACK)
                             return 
                         elif button_end_game.collidepoint(mouse_pos):
                             pygame.quit()
@@ -141,10 +147,6 @@ class UITemplate(ABC):
                 
         pygame.display.flip()
                     
-    # @abstractmethod
-    # def detect_event(self):
-    #     pass
-    
 
 # 具体产品（五子棋UI）
 class GomokuUI(UITemplate):

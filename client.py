@@ -46,19 +46,16 @@ class Client():
         self.set_game()
         self.init_board()
         while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-
-                if event.type == pygame.MOUSEBUTTONDOWN and not self.game_over:
-                    x, y = event.pos
+            event = self.UI_platform.detect_event()
+            if event is not None:
+                event_type, event_val = event
+                if event_type == pygame.MOUSEBUTTONDOWN:
+                    x, y = event_val
                     col = round((x - GRID_SIZE) / GRID_SIZE)
                     row = round((y - GRID_SIZE) / GRID_SIZE)
                     if self.game.rule.is_valid_move(row, col, self.chessboard, self.turn):
                         self.chessboard.set_chess(row=row, col=col, chess_type=self.turn)
                         self.turn = "WHITE" if self.turn == "BALCK" else "BALCK"
-                        self.UI_platform.display_chessboard(self.chessboard)
 
                         winner = self.game.rule.check_win(self.chessboard)
                         if winner:
