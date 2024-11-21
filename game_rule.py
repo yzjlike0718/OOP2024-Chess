@@ -128,7 +128,6 @@ class GoRule(GameRule):
         return 0 <= row < board.get_size() and 0 <= col < board.get_size()
 
     def check_win(self, board):
-        print(f"Go check_win, board: {board.get_instance().board}")
         black_points = 0
         white_points = 0
         visited = [[False for _ in range(board.get_size())] for _ in range(board.get_size())]

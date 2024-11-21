@@ -1,38 +1,29 @@
+from chessboard import *
+import copy
+
 # 备忘录类
 class Memento:
-    def __init__(self, chess_label, x, y):
-        self.chess_label = chess_label
-        self.x = x
-        self.y = y
+    def __init__(self, state: Chessboard):
+        self.state: Chessboard = copy.deepcopy(state)
+        
+    def get_state(self) -> Chessboard:
+        return self.state
+    
+    def set_state(self, state: Chessboard):
+        self.state = copy.deepcopy(state)
 
 # 负责人角色
 class Caretaker:
     def __init__(self):
-        self.memento_list = []
-        self.index = -1
+        self.memento_list: list[Memento] = []
 
-    def add_memento(self, memento):
+    def save_memento(self, memento: Memento):
         self.memento_list.append(memento)
-        self.index += 1
 
-    def get_memento(self, i):
-        if 0 <= i < len(self.memento_list):
-            return self.memento_list[i]
+    def undo(self) -> Memento:
+        if len(self.memento_list) >= 3:
+            self.memento_list.pop() # 上一局（对手行棋后的结果）
+            self.memento_list.pop() # 上上一局（自己行棋后的结果）
+            return self.memento_list.pop() # 上上一局（自己行棋前的结果），上上上一局（自己行棋后的结果）
         else:
-            return None
-
-    def undo(self):
-        if self.index > 0:
-            self.index -= 1
-            return self.memento_list[self.index]
-        else:
-            print("无法悔棋")
-            return None
-
-    def redo(self):
-        if self.index < len(self.memento_list) - 1:
-            self.index += 1
-            return self.memento_list[self.index]
-        else:
-            print("无法撤销悔棋")
             return None

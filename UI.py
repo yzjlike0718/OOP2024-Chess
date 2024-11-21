@@ -142,7 +142,7 @@ class UITemplate(ABC):
         for row in range(chessboard.get_size()):
             for col in range(chessboard.get_size()):
                 curr_chess = chessboard.get_chess(row=row, col=col)
-                if curr_chess == "BALCK":
+                if curr_chess == "BLACK":
                     pygame.draw.circle(self.screen, BLACK, (GRID_SIZE * (col + 1), GRID_SIZE * (row + 1)), CHESS_RADIUS)
                 elif curr_chess == "WHITE":
                     pygame.draw.circle(self.screen, WHITE, (GRID_SIZE * (col + 1), GRID_SIZE * (row + 1)), CHESS_RADIUS)
@@ -152,6 +152,8 @@ class UITemplate(ABC):
         self.button_admit_defeat = self.draw_button("Admit Defeat", COMMON_BUTTON_LEFT, GRID_SIZE + BUTTON_INTERVAL, update=False)
         
         self.button_restart = self.draw_button("Restart", COMMON_BUTTON_LEFT, GRID_SIZE + 2 * BUTTON_INTERVAL, update=False)
+        
+        self.button_undo = self.draw_button("undo", COMMON_BUTTON_LEFT, GRID_SIZE + 3 * BUTTON_INTERVAL, update=False)
                 
         pygame.display.flip()
         
@@ -160,6 +162,9 @@ class UITemplate(ABC):
     
     def restart(self, mouse_pos: tuple[int, int]):
         return self.button_restart.collidepoint(mouse_pos)
+    
+    def undo(self, mouse_pos: tuple[int, int]):
+        return self.button_undo.collidepoint(mouse_pos)
                     
 
 # 具体产品（五子棋UI）
