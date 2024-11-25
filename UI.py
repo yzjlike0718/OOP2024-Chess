@@ -1,11 +1,10 @@
-from abc import ABC, abstractmethod
 import pygame
 import sys
 from commons import *
 from chessboard import *
 
-# 抽象产品&UI模板
-class UITemplate(ABC):
+# UI模板
+class UITemplate():
     
     def __init__(self):
         pygame.init()
@@ -147,6 +146,31 @@ class UITemplate(ABC):
                 elif curr_chess == "WHITE":
                     pygame.draw.circle(self.screen, WHITE, (GRID_SIZE * (col + 1), GRID_SIZE * (row + 1)), CHESS_RADIUS)
                     
+        self.display_right_sidebar(turn)
+        
+    def display_right_sidebar(self):
+        pass
+        
+    def admit_defeat(self, mouse_pos: tuple[int, int]):
+        return self.button_admit_defeat.collidepoint(mouse_pos)
+    
+    def restart(self, mouse_pos: tuple[int, int]):
+        return self.button_restart.collidepoint(mouse_pos)
+    
+    def undo(self, mouse_pos: tuple[int, int]):
+        return self.button_undo.collidepoint(mouse_pos)
+    
+    def skip(self, mouse_pos: tuple[int, int]):
+        print("skip!")
+        return self.button_skip.collidepoint(mouse_pos)
+                    
+
+# 具体产品（五子棋UI）
+class GomokuUI(UITemplate):
+    def __init__(self) -> None:
+        super().__init__()
+        
+    def display_right_sidebar(self, turn):
         message_turn = self.display_message(f"{turn}'s Turn.", left=COMMON_BUTTON_LEFT, top=GRID_SIZE, color=WHITE if turn=="WHITE" else BLACK)
                     
         self.button_admit_defeat = self.draw_button("Admit Defeat", COMMON_BUTTON_LEFT, GRID_SIZE + BUTTON_INTERVAL, update=False)
@@ -157,24 +181,25 @@ class UITemplate(ABC):
                 
         pygame.display.flip()
         
-    def admit_defeat(self, mouse_pos: tuple[int, int]):
-        return self.button_admit_defeat.collidepoint(mouse_pos)
-    
-    def restart(self, mouse_pos: tuple[int, int]):
-        return self.button_restart.collidepoint(mouse_pos)
-    
-    def undo(self, mouse_pos: tuple[int, int]):
-        return self.button_undo.collidepoint(mouse_pos)
-                    
-
-# 具体产品（五子棋UI）
-class GomokuUI(UITemplate):
-    def __init__(self) -> None:
-        super().__init__()
-    
+    def skip(self, mouse_pos: tuple[int, int]):
+        return False
+        
 
 # 具体产品（围棋UI）
 class GoUI(UITemplate):
     def __init__(self) -> None:
         super().__init__()
+        
+    def display_right_sidebar(self, turn):
+        message_turn = self.display_message(f"{turn}'s Turn.", left=COMMON_BUTTON_LEFT, top=GRID_SIZE, color=WHITE if turn=="WHITE" else BLACK)
+                    
+        self.button_admit_defeat = self.draw_button("Admit Defeat", COMMON_BUTTON_LEFT, GRID_SIZE + BUTTON_INTERVAL, update=False)
+        
+        self.button_restart = self.draw_button("Restart", COMMON_BUTTON_LEFT, GRID_SIZE + 2 * BUTTON_INTERVAL, update=False)
+        
+        self.button_undo = self.draw_button("undo", COMMON_BUTTON_LEFT, GRID_SIZE + 3 * BUTTON_INTERVAL, update=False)
+        
+        self.button_skip = self.draw_button("skip", COMMON_BUTTON_LEFT, GRID_SIZE + 4 * BUTTON_INTERVAL, update=False)
+                
+        pygame.display.flip()
         

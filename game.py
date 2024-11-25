@@ -25,6 +25,14 @@ class Game(ABC):
     @abstractmethod
     def set_state(self):
         pass
+    
+    @abstractmethod
+    def allow_winner_check(self) -> bool:
+        pass
+    
+    @abstractmethod
+    def set_skip_last_turn(self, turn: str, skip: bool):
+        pass
 
 # 具体产品（五子棋）
 class GomokuGame(Game):
@@ -45,12 +53,20 @@ class GomokuGame(Game):
     def set_state(self, state: Chessboard):
         self.chessboard = copy.deepcopy(state)
 
+    def allow_winner_check(self):
+        return True
+        
+    def set_skip_last_turn(self, turn, skip):
+        pass
+
 # 具体产品（围棋）
 class GoGame(Game):
     def __init__(self) -> None:
         super().__init__()
         self.rule = GoRule()
         self.chessboard: Chessboard = None
+        self.black_skip_last_turn: bool = False
+        self.white_skip_last_turn: bool = False
         
     def create_memento(self):
         return Memento(self.chessboard)
@@ -63,4 +79,13 @@ class GoGame(Game):
 
     def set_state(self, state: Chessboard):
         self.chessboard = copy.deepcopy(state)
+        
+    def allow_winner_check(self):
+        return self.black_skip_last_turn and self.white_skip_last_turn
+    
+    def set_skip_last_turn(self, turn, skip):
+        if turn == "BLACK":
+            self.black_skip_last_turn = skip
+        elif turn == "WHITE":
+            self.white_skip_last_turn = skip
     

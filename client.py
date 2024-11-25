@@ -59,18 +59,21 @@ class Client():
                     if self.game.rule.is_valid_move(row, col, self.game.get_state(), self.turn):
                         self.game.get_state().set_chess(row=row, col=col, chess_type=self.turn)
                         
+                        self.game.set_skip_last_turn(self.turn, False) # 围棋：当前方选择落子
+                        
                         # 下一轮开始前：
                         self.allow_undo = True # 允许悔棋一次
                         self.turn = "WHITE" if self.turn == "BLACK" else "BLACK" # 交换轮次
                         self.caretaker.save_memento(self.game.create_memento()) # 存储当前棋盘状态
-
-                        self.winner = self.game.rule.check_win(self.game.get_state())
-                        if self.winner:
-                            self.UI_platform.show_winner(self.winner)
-                            self.play_game()
-                        elif self.game.rule.check_draw(self.game.get_state()):
-                            self.UI_platform.show_winner(None)
-                            self.play_game()
+                        
+                        if self.game.allow_winner_check():
+                            self.winner = self.game.rule.check_win(self.game.get_state())
+                            if self.winner:
+                                self.UI_platform.show_winner(self.winner)
+                                self.play_game()
+                            elif self.game.rule.check_draw(self.game.get_state()):
+                                self.UI_platform.show_winner(None)
+                                self.play_game()
                     elif self.UI_platform.admit_defeat(mouse_pos=event_val):
                         self.winner = "WHITE" if self.turn == "BLACK" else "BLACK"
                         self.UI_platform.show_winner(self.winner)
@@ -85,6 +88,19 @@ class Client():
                             else:
                                 self.game.restore_memento(new_memento)
                             self.allow_undo = False
+                    elif self.UI_platform.skip(mouse_pos=event_val):
+                        # 围棋：当前方选择不落子
+                        self.game.set_skip_last_turn(self.turn, True)
+                        if self.game.allow_winner_check():
+                            self.winner = self.game.rule.check_win(self.game.get_state())
+                            assert self.winner is not None
+                            self.UI_platform.show_winner(self.winner)
+                            self.play_game()
+                        else:
+                            # 下一轮开始前：
+                            self.allow_undo = True # 允许悔棋一次
+                            self.turn = "WHITE" if self.turn == "BLACK" else "BLACK" # 交换轮次
+                            self.caretaker.save_memento(self.game.create_memento()) # 存储当前棋盘状态
                     
             self.UI_platform.display_chessboard(self.game.get_state(), self.turn)
             

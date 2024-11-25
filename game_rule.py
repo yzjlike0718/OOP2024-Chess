@@ -175,4 +175,4 @@ class GoRule(GameRule):
             return "WHITE"
     
     def check_draw(self, board):
-        raise NotImplementedError
+        pass # TODO: 围棋有平局吗？
