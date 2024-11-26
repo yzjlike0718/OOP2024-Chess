@@ -20,12 +20,15 @@ class Client():
         self.winner: str = None
         self.allow_undo: bool = True
         
-    def choose_game(self):
-        self.game_name = self.UI_platform.choose_game()
+    def choose_game(self, game_name: str=None):
+        if game_name is None:
+            game_name = self.UI_platform.choose_game()
+        self.game_name = game_name
 
-    def init_board(self):
-        self.board_size = self.UI_platform.choose_board_size()
-        self.game.set_state(Chessboard(self.board_size))
+    def init_board(self, board_size: int=None):
+        if board_size is None:
+            board_size = self.UI_platform.choose_board_size()
+        self.game.set_state(Chessboard(board_size))
         self.caretaker.save_memento(self.game.create_memento()) # 存储第一回合开始时的空棋盘
     
     def set_game(self):
@@ -40,14 +43,14 @@ class Client():
         self.UI_platform = self.UI_factory.createUI()
         # print(f"self.game: {type(self.game)}, self.UI_platform: {type(self.UI_platform)}")
     
-    def play_game(self): # TODO: 考虑作为模板方法
+    def play_game(self, game_name: str=None, board_size: int=None): # TODO: 考虑作为模板方法
         self.game_over = False
         self.turn = "BLACK"
         self.winner = None
         self.allow_undo = True
-        self.choose_game()
+        self.choose_game(game_name)
         self.set_game()
-        self.init_board()
+        self.init_board(board_size)
         while True:
             event = self.UI_platform.detect_event()
             if event is not None:
