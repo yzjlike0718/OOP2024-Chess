@@ -18,6 +18,10 @@ class GameRule(ABC):
     @abstractmethod
     def check_draw(self, board: Chessboard):
         pass
+    
+    @abstractmethod
+    def set_chess(self, row: int, col: int, board: Chessboard, curr_turn: str):
+        pass
 
 # 具体策略类：五子棋规则
 class GomokuRule(GameRule):
@@ -60,48 +64,67 @@ class GomokuRule(GameRule):
     def check_draw(self, board):
         return all(board.get_chess(row, col) is not None for row in range(board.get_size()) for col in range(board.get_size()))
 
+    def set_chess(self, row, col, board, curr_turn):
+        board.set_chess(row, col, curr_turn)
 
 # 具体策略类：围棋规则
 class GoRule(GameRule):
-    def has_liberty(self, row: int, col: int, board: Chessboard):
-        # 检查 (row, col) 位置的棋子是否有气
-        assert self.is_within_board(row, col, board)
-        color = board.get_chess(row, col)
-        if self.is_within_board(row + 1, col, board):
-            if board.get_chess(row + 1, col) == color or board.get_chess(row + 1, col) is None:
-                return True
-        if self.is_within_board(row - 1, col, board):
-            if board.get_chess(row - 1, col) == color or board.get_chess(row - 1, col) is None:
-                return True
-        if self.is_within_board(row, col + 1, board):
-            if board.get_chess(row, col + 1) == color or board.get_chess(row, col + 1) is None:
-                return True
-        if self.is_within_board(row, col - 1, board):
-            if board.get_chess(row, col - 1) == color or board.get_chess(row, col - 1) is None:
-                return True
+    def get_territory(self, row: int, col: int, board: Chessboard) -> list[(int, int)]:
+        visited = [[False for _ in range(board.get_size())] for _ in range(board.get_size())]
+        
+        def dfs(row, col, color):
+            # 深搜：找到一方棋子连接的所有点
+            stack = [(row, col)]
+            territory = []
+            while stack != []:
+                r, c = stack.pop()
+                if not self.is_within_board(r, c, board) or visited[r][c]:
+                    continue
+                if board.get_chess(r, c) == color:
+                    visited[r][c] = True
+                    territory.append((r, c))
+                    # 向四个方向扩展
+                    stack.append((r + 1, c))
+                    stack.append((r - 1, c))
+                    stack.append((r, c + 1))
+                    stack.append((r, c - 1))
+            return territory
+        
+        return dfs(row, col, board.get_chess(row, col))
+        
+    def has_liberty(self, territory: list[(int, int)], board: Chessboard) -> bool:
+        # 检查 territory 是否有气
+        print(f"check has_liberty territory: {territory}")
+        for (row, col) in territory:
+            neighbors = [(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
+            for (r, c) in neighbors:
+                if self.is_within_board(r, c, board):
+                    if board.get_chess(r, c) == None:  # 空位表示有气
+                        return True
+        
+        # 如果遍历所有点都没有找到气，则返回 False
         return False
      
-    def get_curr_capture(self, row: int, col: int, board: Chessboard):
+    def get_curr_capture(self, row: int, col: int, board: Chessboard) -> list[(int, int)]:
         # 检查当前在 (row, col) 落子后，上下左右可以提的子
                         
         assert self.is_within_board(row, col, board)
+        self_color = board.get_chess(row, col)
+        rival_color = "WHITE" if self_color == "BLACK" else "BLACK"
         
         curr_capture = []
-        
-        if self.is_within_board(row + 1, col, board) and not self.has_liberty(row + 1, col, board):
-            curr_capture.append((row + 1, col))
-        if self.is_within_board(row - 1, col, board) and not self.has_liberty(row - 1, col, board):
-            curr_capture.append((row - 1, col))
-        if self.is_within_board(row, col + 1, board) and not self.has_liberty(row, col + 1, board):
-            curr_capture.append((row, col + 1))
-        if self.is_within_board(row, col - 1, board) and not self.has_liberty(row, col - 1, board):
-            curr_capture.append((row, col - 1))
-            
+        neighbors = [(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
+        for (r, c) in neighbors:
+            if self.is_within_board(r, c, board) and board.get_chess(r, c) == rival_color:
+                rival_territory = self.get_territory(r, c, board) # 对手的连通域
+                if not self.has_liberty(rival_territory, board): # 对手的连通域没有气，可以提
+                    curr_capture.extend(rival_territory)
         return curr_capture
      
-    def capture(self, row: int, col: int, board: Chessboard):
+    def capture(self, territory: list[(int, int)], board: Chessboard):
         # 提子
-        board.set_chess(row, col, None)
+        for (row, col) in territory:
+            board.set_chess(row, col, None)
                
     def is_valid_move(self, row, col, board, curr_turn):
         print(f"GoRule is_valid_move row={row}, col={col}, curr_turn={curr_turn}")
@@ -112,7 +135,9 @@ class GoRule(GameRule):
     
         # 暂时落子
         board.set_chess(row, col, curr_turn)
-        if not self.has_liberty(row, col, board):
+        curr_territory = self.get_territory(row, col, board)
+        
+        if not self.has_liberty(curr_territory, board):
             # 判断落子后是否可提子
             if self.get_curr_capture(row, col, board) != []:
                 board.set_chess(row, col, None)
@@ -128,46 +153,28 @@ class GoRule(GameRule):
         return 0 <= row < board.get_size() and 0 <= col < board.get_size()
 
     def check_win(self, board):
-        black_points = 0
-        white_points = 0
-        visited = [[False for _ in range(board.get_size())] for _ in range(board.get_size())]
-        
-        def dfs(row, col, color):
-            # 深搜：找到一方棋子连接的所有点
-            stack = [(row, col)]
-            territory = set()
-            while stack != []:
-                r, c = stack.pop()
-                if not self.is_within_board(r, c, board) or visited[r][c]:
-                    continue
-                if board.get_chess(r, c) == color:
-                    visited[r][c] = True
-                    territory.add((r, c))
-                    # 向四个方向扩展
-                    stack.append((r + 1, c))
-                    stack.append((r - 1, c))
-                    stack.append((r, c + 1))
-                    stack.append((r, c - 1))
-            return territory
-        
         # 清除无气的子
-        for r in range(board.get_size()):
-            for c in range(board.get_size()):
-                if not self.has_liberty(r, c, board):
-                    self.capture(r, c, board)
+        for row in range(board.get_size()):
+            for col in range(board.get_size()):
+                territory = self.get_territory(row, col, board)
+                if not self.has_liberty(territory, board):
+                    self.capture(territory, board)
+                    
+        black_points = 0
+        white_points = 3.25 # 黑子让六目半
+        visited = [[False for _ in range(board.get_size())] for _ in range(board.get_size())]
 
-        for r in range(board.get_size()):
-            for c in range(board.get_size()):
-                if visited[r][c]:
+        for row in range(board.get_size()):
+            for col in range(board.get_size()):
+                if visited[row][col]:
                     continue
-                if board.get_chess(r, c) == "BLACK":
-                    # 计算黑棋占据的点
-                    territory = dfs(r, c, "BLACK")
+                territory = self.get_territory(row, col, board) # 当前领土面积
+                if board.get_chess(row, col) == "BLACK":
                     black_points += len(territory)
-                elif board.get_chess(r, c) == "WHITE":
-                    # 计算白棋占据的点
-                    territory = dfs(r, c, "WHITE")
+                elif board.get_chess(row, col) == "WHITE":
                     white_points += len(territory)
+                for (r, c) in territory:
+                    visited[r][c] = True
         print(f"black_points: {black_points}, white_points: {white_points}")
         if black_points > white_points:
             return "BLACK"
@@ -176,3 +183,9 @@ class GoRule(GameRule):
     
     def check_draw(self, board):
         pass # TODO: 围棋有平局吗？
+    
+    def set_chess(self, row, col, board, curr_turn):
+        board.set_chess(row, col, curr_turn)
+        curr_capture = self.get_curr_capture(row, col, board)
+        self.capture(curr_capture, board)
+        

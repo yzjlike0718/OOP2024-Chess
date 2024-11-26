@@ -57,14 +57,9 @@ class Client():
                     col = round((x - GRID_SIZE) / GRID_SIZE)
                     row = round((y - GRID_SIZE) / GRID_SIZE)
                     if self.game.rule.is_valid_move(row, col, self.game.get_state(), self.turn):
-                        self.game.get_state().set_chess(row=row, col=col, chess_type=self.turn)
+                        self.game.rule.set_chess(row=row, col=col, board=self.game.get_state(), curr_turn=self.turn)
                         
                         self.game.set_skip_last_turn(self.turn, False) # 围棋：当前方选择落子
-                        
-                        # 下一轮开始前：
-                        self.allow_undo = True # 允许悔棋一次
-                        self.turn = "WHITE" if self.turn == "BLACK" else "BLACK" # 交换轮次
-                        self.caretaker.save_memento(self.game.create_memento()) # 存储当前棋盘状态
                         
                         if self.game.allow_winner_check():
                             self.winner = self.game.rule.check_win(self.game.get_state())
@@ -74,6 +69,12 @@ class Client():
                             elif self.game.rule.check_draw(self.game.get_state()):
                                 self.UI_platform.show_winner(None)
                                 self.play_game()
+                                
+                        # 下一轮开始前：
+                        self.allow_undo = True # 允许悔棋一次
+                        self.turn = "WHITE" if self.turn == "BLACK" else "BLACK" # 交换轮次
+                        self.caretaker.save_memento(self.game.create_memento()) # 存储当前棋盘状态
+                        
                     elif self.UI_platform.admit_defeat(mouse_pos=event_val):
                         self.winner = "WHITE" if self.turn == "BLACK" else "BLACK"
                         self.UI_platform.show_winner(self.winner)
