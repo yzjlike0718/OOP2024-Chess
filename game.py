@@ -71,7 +71,7 @@ class GomokuGame(Game):
 class GoGame(Game):
     def __init__(self) -> None:
         super().__init__()
-        self.rule = GoRule()
+        self.rule: GoRule = GoRule()
         self.chessboard: Chessboard = None
         self.black_skip_last_turn: bool = False
         self.white_skip_last_turn: bool = False
@@ -90,6 +90,8 @@ class GoGame(Game):
         
     def make_move(self, row, col, curr_turn):
         self.chessboard.set_chess(row, col, curr_turn)
+        curr_capture = self.rule.get_curr_capture(row, col, self.chessboard)
+        self.rule.capture(curr_capture, self.chessboard)
         
     def allow_winner_check(self):
         return self.black_skip_last_turn and self.white_skip_last_turn
