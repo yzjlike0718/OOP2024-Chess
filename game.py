@@ -27,6 +27,11 @@ class Game(ABC):
         pass
     
     @abstractmethod
+    def make_move(self, row: int, col: int, curr_turn: str):
+        pass
+    
+    
+    @abstractmethod
     def allow_winner_check(self) -> bool:
         pass
     
@@ -52,6 +57,9 @@ class GomokuGame(Game):
 
     def set_state(self, state: Chessboard):
         self.chessboard = copy.deepcopy(state)
+
+    def make_move(self, row, col, curr_turn):
+        self.chessboard.set_chess(row, col, curr_turn)
 
     def allow_winner_check(self):
         return True
@@ -79,6 +87,9 @@ class GoGame(Game):
 
     def set_state(self, state: Chessboard):
         self.chessboard = copy.deepcopy(state)
+        
+    def make_move(self, row, col, curr_turn):
+        self.chessboard.set_chess(row, col, curr_turn)
         
     def allow_winner_check(self):
         return self.black_skip_last_turn and self.white_skip_last_turn
