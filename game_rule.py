@@ -4,7 +4,7 @@ from chessboard import Chessboard
 # 策略接口，定义通用的游戏规则方法
 class GameRule(ABC):
     @abstractmethod
-    def is_valid_move(self, row: int, col: int, board: Chessboard, curr_turn: str, turn_taken: bool):
+    def is_valid_move(self, row: int, col: int, board: Chessboard, curr_turn: str, turn_taken: bool) -> tuple[bool, str]:
         """
         检查当前玩家的落子是否有效。
         :param row: 棋子行坐标
@@ -12,7 +12,7 @@ class GameRule(ABC):
         :param board: 当前棋盘状态（Chessboard 对象）
         :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
         :param turn_taken: 当前回合玩家是否已经落子
-        :return: 是否为有效落子（布尔值）
+        :return: 是否为有效落子（布尔值），非法时错误信息（str）
         """
         pass
     
@@ -68,7 +68,13 @@ class GomokuRule(GameRule):
         :param turn_taken: 当前回合玩家是否已经落子
         :return: 是否为有效落子（布尔值）
         """
-        return self.is_within_board(row, col, board) and board.get_chess(row=row, col=col) is None and not turn_taken
+        if not self.is_within_board(row, col, board):
+            return False, None
+        if turn_taken:
+            return False, "[Invalid move] Turn already taken."
+        if board.get_chess(row=row, col=col) is not None:
+            return False, "[Invalid move] Chess already set here."
+        return True, None
 
     def is_within_board(self, row, col, board):
         """
@@ -195,7 +201,6 @@ class GoRule(GameRule):
         :param board: 棋盘对象
         :return: 可以提的对方棋子位置列表
         """
-        print(f"get_curr_capture: row={row}, col={col}")
         assert self.is_within_board(row, col, board)
         self_color = board.get_chess(row, col)
         rival_color = "WHITE" if self_color == "BLACK" else "BLACK"
@@ -231,12 +236,12 @@ class GoRule(GameRule):
         :param turn_taken: 当前回合玩家是否已经落子
         :return: 是否为有效落子
         """
-        if turn_taken:
-            return False
         if not self.is_within_board(row, col, board):
-            return False
+            return False, None
+        if turn_taken:
+            return False, "[Invalid move] Turn already taken."
         if board.get_chess(row=row, col=col) is not None:
-            return False
+            return False, "[Invalid move] Chess already set here."
     
         # 暂时落子
         board.set_chess(row, col, curr_turn)
@@ -246,13 +251,13 @@ class GoRule(GameRule):
             # 判断落子后是否可提子
             if self.get_curr_capture(row, col, board):
                 board.set_chess(row, col, None)
-                return True
+                return True, None
             else:
                 board.set_chess(row, col, None)
-                return False
+                return False, "[Invalid move] Lose your liberty while no opponent chess to be captured."
         else:
             board.set_chess(row, col, None)
-            return True
+            return True, None
     
     def is_within_board(self, row, col, board):
         """
@@ -295,7 +300,6 @@ class GoRule(GameRule):
                     white_points += len(territory)
                 for (r, c) in territory:
                     visited[r][c] = True
-        print(f"black_points: {black_points}, white_points: {white_points}")
         if black_points > white_points:
             return "BLACK"
         elif white_points > black_points:

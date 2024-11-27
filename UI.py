@@ -289,6 +289,8 @@ class UITemplate():
         return self.button_hint.collidepoint(mouse_pos)
     
     def pop_message(self, message: str, text_color=RED):
+        if message is None:
+            return
         # 界面参数
         popup_width, popup_height = 600, 400
         popup_surface = pygame.Surface((popup_width, popup_height))

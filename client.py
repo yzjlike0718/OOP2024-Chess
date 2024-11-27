@@ -133,12 +133,15 @@ class Client():
                     x, y = event_val
                     col = round((x - GRID_SIZE) / GRID_SIZE)
                     row = round((y - GRID_SIZE) / GRID_SIZE)
-                    if self.game.rule.is_valid_move(row, col, self.game.get_state(), self.turn, self.game.get_turn_taken()):
+                    is_valid_move, message = self.game.rule.is_valid_move(row, col, self.game.get_state(), self.turn, self.game.get_turn_taken())
+                    if is_valid_move:
                         # 如果是合法落子，保存状态并更新棋盘
                         self.caretaker.save_memento(self.game.create_memento())
                         self.game.make_move(row=row, col=col, curr_turn=self.turn)
                         self.game.set_skip_last_turn(self.turn, False)  # 围棋中取消跳过落子标记
-                    elif self.UI_platform.admit_defeat(mouse_pos=event_val):
+                        continue
+                    self.UI_platform.pop_message(message)
+                    if self.UI_platform.admit_defeat(mouse_pos=event_val):
                         # 玩家认输
                         self.winner = "WHITE" if self.turn == "BLACK" else "BLACK"
                         self.UI_platform.show_winner(self.winner)
