@@ -4,13 +4,14 @@ from chessboard import Chessboard
 # 策略接口，定义通用的游戏规则方法
 class GameRule(ABC):
     @abstractmethod
-    def is_valid_move(self, row: int, col: int, board: Chessboard, curr_turn: str):
+    def is_valid_move(self, row: int, col: int, board: Chessboard, curr_turn: str, turn_taken: bool):
         """
         检查当前玩家的落子是否有效。
         :param row: 棋子行坐标
         :param col: 棋子列坐标
         :param board: 当前棋盘状态（Chessboard 对象）
         :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
+        :param turn_taken: 当前回合玩家是否已经落子
         :return: 是否为有效落子（布尔值）
         """
         pass
@@ -57,7 +58,7 @@ class GameRule(ABC):
 
 # 具体策略类：五子棋规则
 class GomokuRule(GameRule):
-    def is_valid_move(self, row, col, board, curr_turn):
+    def is_valid_move(self, row, col, board, curr_turn, turn_taken):
         """
         检查五子棋的落子是否有效。
         规则：位置在棋盘内，且为空。
@@ -65,10 +66,10 @@ class GomokuRule(GameRule):
         :param col: 棋子列坐标
         :param board: 当前棋盘状态（Chessboard 对象）
         :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
+        :param turn_taken: 当前回合玩家是否已经落子
         :return: 是否为有效落子（布尔值）
         """
-        print(f"GomokuRule is_valid_move row={row}, col={col}")
-        return self.is_within_board(row, col, board) and board.get_chess(row=row, col=col) is None
+        return self.is_within_board(row, col, board) and board.get_chess(row=row, col=col) is None and not turn_taken
 
     def is_within_board(self, row, col, board):
         """
@@ -228,7 +229,7 @@ class GoRule(GameRule):
         for (row, col) in territory:
             board.set_chess(row, col, None)
           
-    def is_valid_move(self, row, col, board, curr_turn):
+    def is_valid_move(self, row, col, board, curr_turn, turn_taken):
         """
         检查当前落子是否有效。
         规则：
@@ -238,9 +239,11 @@ class GoRule(GameRule):
         :param col: 落子列坐标
         :param board: 棋盘对象
         :param curr_turn: 当前落子方颜色
+        :param turn_taken: 当前回合玩家是否已经落子
         :return: 是否为有效落子
         """
-        print(f"GoRule is_valid_move row={row}, col={col}, curr_turn={curr_turn}")
+        if turn_taken:
+            return False
         if not self.is_within_board(row, col, board):
             return False
         if board.get_chess(row=row, col=col) is not None:

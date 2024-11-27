@@ -78,6 +78,20 @@ class Client():
         """
         self.allow_undo = True  # 允许悔棋
         self.turn = "WHITE" if self.turn == "BLACK" else "BLACK"  # 切换玩家
+        self.game.set_turn_taken(False)  # 新回合的玩家还没有落子
+        
+    def check_finish(self):
+        """
+        检查游戏是否结束（一方胜利或者平局）。
+        """
+        if self.game.allow_winner_check():
+            self.winner = self.game.rule.check_win(self.game.get_state())
+            if self.winner:
+                self.UI_platform.show_winner(self.winner)
+                self.play_game()
+            elif self.game.rule.check_draw(self.game.get_state()):  # 平局情况
+                self.UI_platform.show_winner(None)
+                self.play_game()
 
     def play_game(self, game_name: str=None, board_size: int=None):  # TODO: 考虑作为模板方法
         """
@@ -92,6 +106,7 @@ class Client():
         self.allow_undo = True
         self.choose_game(game_name)  # 选择游戏
         self.set_game()  # 创建游戏和 UI
+        self.game.set_turn_taken(False)  # 新游戏的玩家还没有落子
         self.init_board(board_size)  # 初始化棋盘
         
         while True:
@@ -103,24 +118,11 @@ class Client():
                     x, y = event_val
                     col = round((x - GRID_SIZE) / GRID_SIZE)
                     row = round((y - GRID_SIZE) / GRID_SIZE)
-                    if self.game.rule.is_valid_move(row, col, self.game.get_state(), self.turn):
+                    if self.game.rule.is_valid_move(row, col, self.game.get_state(), self.turn, self.game.get_turn_taken()):
                         # 如果是合法落子，保存状态并更新棋盘
                         self.caretaker.save_memento(self.game.create_memento())
                         self.game.make_move(row=row, col=col, curr_turn=self.turn)
                         self.game.set_skip_last_turn(self.turn, False)  # 围棋中取消跳过落子标记
-                        
-                        # 检查是否有人获胜
-                        if self.game.allow_winner_check():
-                            self.winner = self.game.rule.check_win(self.game.get_state())
-                            if self.winner:
-                                self.UI_platform.show_winner(self.winner)
-                                self.play_game()
-                            elif self.game.rule.check_draw(self.game.get_state()):  # 平局情况
-                                self.UI_platform.show_winner(None)
-                                self.play_game()
-                                
-                        self.new_turn()  # 切换到下一轮
-                        
                     elif self.UI_platform.admit_defeat(mouse_pos=event_val):
                         # 玩家认输
                         self.winner = "WHITE" if self.turn == "BLACK" else "BLACK"
@@ -136,14 +138,31 @@ class Client():
                     elif self.UI_platform.skip(mouse_pos=event_val):
                         # 围棋玩家选择跳过落子
                         self.game.set_skip_last_turn(self.turn, True)
+                        self.game.set_turn_taken(True)
                         if self.game.allow_winner_check():  # 检查是否满足胜利条件
                             self.winner = self.game.rule.check_win(self.game.get_state())
                             assert self.winner is not None
                             self.UI_platform.show_winner(self.winner)
                             self.play_game()
-                        else:
-                            self.new_turn()  # 继续下一轮
-                    
+                    elif self.UI_platform.store_state(mouse_pos=event_val):
+                        # 玩家请求存储当前局面
+                        file_dir = self.UI_platform.select_file()
+                        message = self.game.store_state(file_dir, self.turn)
+                        self.UI_platform.pop_message(message)
+                    elif self.UI_platform.capture(mouse_pos=event_val):
+                        # 围棋玩家请求提子
+                        pass
+                    elif self.UI_platform.end_turn(mouse_pos=event_val):
+                        # 玩家请求结束当前回合
+                        if self.game.get_turn_taken():  # 当前玩家已经落子（或围棋玩家选择 skip）
+                            self.check_finish()  # 检查是否终局
+                            self.new_turn()  # 切换到下一轮
+                elif event_type == pygame.KEYDOWN:
+                    if event_val == pygame.K_RETURN:
+                        # 玩家请求结束当前回合
+                        if self.game.get_turn_taken():  # 当前玩家已经落子（或围棋玩家选择 skip）
+                            self.check_finish()  # 检查是否终局
+                            self.new_turn()  # 切换到下一轮
             # 每轮更新 UI 显示棋盘状态
             self.UI_platform.display_chessboard(self.game.get_state(), self.turn)
             

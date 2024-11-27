@@ -3,6 +3,8 @@ from game_rule import *
 from memento import *
 from chessboard import *
 import copy
+import os
+import json
 
 # 抽象产品 & 发起人角色：Game
 class Game(ABC):
@@ -12,6 +14,7 @@ class Game(ABC):
         """
         self.rule: GameRule = None  # 游戏规则
         self.chessboard: Chessboard = None  # 游戏棋盘
+        self.turn_taken: bool = False  # 当前回合的玩家是否已经落子
     
     @abstractmethod
     def create_memento(self) -> Memento:
@@ -71,6 +74,32 @@ class Game(ABC):
         :param skip: 是否跳过（布尔值）
         """
         pass
+    
+    @abstractmethod
+    def set_turn_taken(self, taken: bool):
+        """
+        设置当前回合的玩家是否已经落子。
+        :param taken: 是否行棋（布尔值）
+        """
+        pass
+    
+    @abstractmethod
+    def get_turn_taken(self) -> bool:
+        """
+        获得当前回合的玩家是否已经落子。
+        :ruturn 是否行棋（布尔值）
+        """
+        pass
+    
+    @abstractmethod
+    def store_state(self, file_dir: str, curr_turn: str) -> str:
+        """
+        存储当前局面和当前局面对应的下一个行棋方到指定文件。
+        :param file_dir: 指定文件。
+        :param curr_turn: 当前回合的玩家。
+        :ruturn 成功/不成功
+        """
+        pass
 
 # 具体产品（五子棋）
 class GomokuGame(Game):
@@ -118,6 +147,7 @@ class GomokuGame(Game):
         :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
         """
         self.chessboard.set_chess(row, col, curr_turn)
+        self.set_turn_taken(True)
 
     def allow_winner_check(self):
         """
@@ -133,6 +163,51 @@ class GomokuGame(Game):
         :param skip: 是否跳过（布尔值）
         """
         pass
+    
+    def set_turn_taken(self, taken):
+        """
+        设置当前回合的玩家是否已经落子。
+        :param taken: 是否行棋（布尔值）
+        """
+        self.turn_taken = taken
+        
+    def get_turn_taken(self):
+        """
+        获得当前回合的玩家是否已经落子。
+        :ruturn 是否行棋（布尔值）
+        """
+        return self.turn_taken
+    
+    def store_state(self, file_dir, curr_turn):
+        """
+        存储当前局面和当前局面对应的下一个行棋方到指定文件。
+        :param file_dir: 指定文件。
+        :param curr_turn: 当前回合的玩家。
+        :ruturn 成功/不成功
+        """
+        base_name = os.path.splitext(file_dir)[0]
+        file_path = base_name + ".json"
+        if os.path.exists(file_path):
+            return f"Please don't cover existing file {file_path}."
+        
+        if self.get_turn_taken():
+            next_player_for_curr_state = "WHITE" if curr_turn == "BLACK" else "BLACK"
+        else:
+            next_player_for_curr_state = curr_turn
+            
+        file_dir = os.path.dirname(file_path)  # 提取目录部分
+        try:
+            os.makedirs(file_dir, exist_ok=True)
+        except Exception as e:
+            error_message = f"Failed to create directory '{file_dir}': {str(e)}"
+            return error_message
+        
+        state = {"next_player_for_curr_state": next_player_for_curr_state,
+                 "chessboard": self.chessboard.board}
+        with open(file_path, 'w') as f:
+            json.dump(state, f)
+        
+        return f"Successfully stored current state to {file_path}."
 
 # 具体产品（围棋）
 class GoGame(Game):
@@ -184,6 +259,7 @@ class GoGame(Game):
         self.chessboard.set_chess(row, col, curr_turn)
         curr_capture = self.rule.get_curr_capture(row, col, self.chessboard)  # 获取可以提的子
         self.rule.capture(curr_capture, self.chessboard)  # 执行提子操作
+        self.set_turn_taken(True)
         
     def allow_winner_check(self):
         """
@@ -202,4 +278,43 @@ class GoGame(Game):
             self.black_skip_last_turn = skip
         elif turn == "WHITE":
             self.white_skip_last_turn = skip
+
+    def set_turn_taken(self, taken):
+        """
+        设置当前回合的玩家是否已经落子。
+        :param taken: 是否行棋（布尔值）
+        """
+        self.turn_taken = taken
+        
+    def get_turn_taken(self):
+        """
+        获得当前回合的玩家是否已经落子。
+        :ruturn 是否行棋（布尔值）
+        """
+        return self.turn_taken
     
+    def store_state(self, file_dir, curr_turn):
+        """
+        存储当前局面和当前局面对应的下一个行棋方到指定文件。
+        :param file_dir: 指定文件。
+        :param curr_turn: 当前回合的玩家。
+        :ruturn 成功/不成功
+        """
+        base_name = os.path.splitext(file_dir)[0]
+        file_dir = base_name + ".json"
+        if os.path.exists(file_dir):
+            return f"Please don't cover existing file {file_dir}."
+        if self.get_turn_taken():
+            next_player_for_curr_state = "WHITE" if curr_turn == "BLACK" else "BLACK"
+        else:
+            next_player_for_curr_state = curr_turn
+        try:
+            os.makedirs(file_dir)
+        except Exception as e:
+            error_message = f"Failed to create directory '{file_dir}': {str(e)}"
+            return error_message
+        
+        state = {"next_player_for_curr_state": next_player_for_curr_state,
+                 "chessboard": self.chessboard.board}
+        with open(file_dir, 'w') as f:
+                json.dump(state, f)

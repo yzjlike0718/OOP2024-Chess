@@ -2,6 +2,8 @@ import pygame
 import sys
 from commons import *
 from chessboard import *
+import os
+import string
 
 # UI模板
 class UITemplate():
@@ -17,10 +19,19 @@ class UITemplate():
         pygame.font.init()
         
         self.FONT = pygame.font.SysFont(None, 40)  # 设置字体大小
+        self.SMALLFONT = pygame.font.SysFont(None, 30)  # 设置字体大小
         
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))  # 创建窗口
         pygame.display.set_caption("Chess Game Platform")  # 设置窗口标题
         self.background_image = pygame.transform.scale(pygame.image.load("pics/backgroud.jpeg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
+        
+        self.button_admit_defeat = None  # "认输" 按钮
+        self.button_restart = None  # "重新开始" 按钮
+        self.button_undo = None  # "悔棋" 按钮
+        self.button_skip = None  # "跳过" 按钮
+        self.button_store_state = None  # "存储局面" 按钮
+        self.button_capture = None  # "提子" 按钮
+        self.button_end_turn = None  # "结束回合" 按钮
         
     def detect_event(self):
         """
@@ -209,15 +220,242 @@ class UITemplate():
         """
         return self.button_admit_defeat.collidepoint(mouse_pos)
     
-    def restart(self, mouse_pos: tuple[int, int]):
+    def restart(self, mouse_pos: tuple[int, int]) -> bool:
+        """
+        判断是否点击了“重新开始”按钮。
+        :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
+        :returnbool: 如果鼠标位置与“重新开始”按钮发生碰撞，则返回 True；否则返回 False。
+        """
         return self.button_restart.collidepoint(mouse_pos)
-    
-    def undo(self, mouse_pos: tuple[int, int]):
+
+    def undo(self, mouse_pos: tuple[int, int]) -> bool:
+        """
+        判断是否点击了“撤销”按钮。
+        :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
+        :return bool: 如果鼠标位置与“撤销”按钮发生碰撞，则返回 True；否则返回 False。
+        """
         return self.button_undo.collidepoint(mouse_pos)
-    
-    def skip(self, mouse_pos: tuple[int, int]):
-        print("skip!")
+
+    def skip(self, mouse_pos: tuple[int, int]) -> bool:
+        """
+        判断是否点击了“跳过”按钮，并打印跳过的提示。
+        :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
+        :return bool: 如果鼠标位置与“跳过”按钮发生碰撞，则返回 True；否则返回 False。
+        """
         return self.button_skip.collidepoint(mouse_pos)
+    
+    def store_state(self, mouse_pos: tuple[int, int]) -> bool:
+        """
+        判断是否点击了“存储局面”按钮，并打印跳过的提示。
+        :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
+        :return bool: 如果鼠标位置与“存储局面”按钮发生碰撞，则返回 True；否则返回 False。
+        """
+        return self.button_store_state.collidepoint(mouse_pos)
+    
+    def capture(self, mouse_pos: tuple[int, int]) -> bool:
+        """
+        判断是否点击了“提子”按钮。
+        :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
+        :return bool: 如果鼠标位置与“提子”按钮发生碰撞，则返回 True；否则返回 False。
+        """
+        if self.button_capture is None:
+            return False
+        return self.button_capture.collidepoint(mouse_pos)
+
+    def end_turn(self, mouse_pos: tuple[int, int]) -> bool:
+        """
+        判断是否点击了“结束回合”按钮。
+        :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
+        :return bool: 如果鼠标位置与“结束回合”按钮发生碰撞，则返回 True；否则返回 False。
+        """
+        return self.button_end_turn.collidepoint(mouse_pos)
+    
+    def pop_message(self, message: str):
+        # 界面参数
+        popup_width, popup_height = 600, 400
+        popup_surface = pygame.Surface((popup_width, popup_height))
+        popup_rect = popup_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        popup_surface.fill(WHITE)
+        pygame.draw.rect(popup_surface, BLACK, popup_surface.get_rect(), 2)
+        
+        # 按钮
+        button_rect = pygame.Rect(250, 350, 100, 40)
+        button_color = BLUE
+        button_text = self.SMALLFONT.render("Got it", True, WHITE)
+        
+        running = True
+
+        while running:
+            # 处理事件
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_x, mouse_y = event.pos
+                    if popup_rect.collidepoint(event.pos):
+                        rel_x, rel_y = mouse_x - popup_rect.x, mouse_y - popup_rect.y
+                        
+                        # 点击确认按钮
+                        if button_rect.collidepoint(rel_x, rel_y):
+                            running = False
+
+            # 绘制背景覆盖主界面
+            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))  # 半透明黑色
+            self.screen.blit(overlay, (0, 0))
+
+            # 绘制浮窗
+            popup_surface.fill(WHITE)
+            pygame.draw.rect(popup_surface, BLACK, popup_surface.get_rect(), 2)
+
+            # 信息
+            message_text = self.SMALLFONT.render(message, True, RED)
+            popup_surface.blit(message_text, ((popup_surface.get_width() - message_text.get_width()) // 2, (popup_surface.get_height() - message_text.get_height()) // 2))
+
+            
+            # 绘制确认按钮
+            pygame.draw.rect(popup_surface, button_color, button_rect)
+            popup_surface.blit(button_text, (button_rect.x + (button_rect.width - button_text.get_width()) // 2,
+                                            button_rect.y + (button_rect.height - button_text.get_height()) // 2))
+
+            # 将浮窗绘制到主屏幕
+            self.screen.blit(popup_surface, popup_rect.topleft)
+
+            pygame.display.flip()
+    
+    def select_file(self):
+        """
+        弹出新窗口，用户选择目录，并输入文件名以存储当前局面。
+        :return: 用户选择的文件完整路径字符串，如果用户取消则返回空字符串。
+        """
+        current_dir = ('./')  # 默认开始于当前目录
+
+        # 界面参数
+        popup_width, popup_height = 600, 400
+        popup_surface = pygame.Surface((popup_width, popup_height))
+        popup_rect = popup_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        popup_surface.fill(WHITE)
+        pygame.draw.rect(popup_surface, BLACK, popup_surface.get_rect(), 2)
+
+        # 输入框
+        input_box_color = BLACK
+        input_box = pygame.Rect(50, 300, 500, 40)
+        input_text = ''
+        active = False
+
+        # 按钮
+        button_rect = pygame.Rect(250, 350, 100, 40)
+        button_color = BLUE
+        button_text = self.SMALLFONT.render("Confirm", True, WHITE)
+        cancel_button_rect = pygame.Rect(360, 350, 100, 40)
+        cancel_button_color = GRAY
+        cancel_button_text = self.SMALLFONT.render("Cancel", True, BLACK)
+
+        running = True
+        result_path = ''
+
+        while running:
+            # 处理事件
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_x, mouse_y = event.pos
+                    if popup_rect.collidepoint(event.pos):
+                        rel_x, rel_y = mouse_x - popup_rect.x, mouse_y - popup_rect.y
+
+                        # 点击输入框
+                        if input_box.collidepoint(rel_x, rel_y):
+                            input_box_color = BLUE
+                            active = True
+                        else:
+                            input_box_color = BLACK
+                            active = False
+
+                        # 点击确认按钮
+                        if button_rect.collidepoint(rel_x, rel_y):
+                            if input_text.strip():
+                                result_path = os.path.join(current_dir, input_text.strip())
+                                running = False
+                            else:
+                                self.display_message("Please enter a valid file name!", color=(255, 0, 0),
+                                                    left=popup_rect.x + 50, top=popup_rect.y + 250)
+
+                        # 点击取消按钮
+                        if cancel_button_rect.collidepoint(rel_x, rel_y):
+                            running = False
+
+                        # 点击目录项
+                        i = 0
+                        for entry in os.listdir(current_dir):
+                            if os.path.isfile(entry):
+                                continue
+                            entry_rect = pygame.Rect(50, 50 + i * 30, 500, 30)
+                            i += 1
+                            if entry_rect.collidepoint(rel_x, rel_y):
+                                selected_path = os.path.join(current_dir, entry)
+                                if os.path.isdir(selected_path):
+                                    current_dir = selected_path
+                                break
+
+                elif event.type == pygame.KEYDOWN:
+                    if active:
+                        if event.key == pygame.K_BACKSPACE:
+                            input_text = input_text[:-1]
+                        elif event.key == pygame.K_RETURN:
+                            active = False
+                        else:
+                            if event.unicode in string.printable:
+                                input_text += event.unicode
+
+            # 绘制背景覆盖主界面
+            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))  # 半透明黑色
+            self.screen.blit(overlay, (0, 0))
+
+            # 绘制浮窗
+            popup_surface.fill(WHITE)
+            pygame.draw.rect(popup_surface, BLACK, popup_surface.get_rect(), 2)
+
+            # 标题
+            title_text = self.SMALLFONT.render(f"Current Directory: {current_dir}", True, BLACK)
+            popup_surface.blit(title_text, (50, 20))
+
+            # 绘制目录内容
+            entries = [x for x in os.listdir(current_dir) if os.path.isdir(x)]
+            for i, entry in enumerate(entries[:10]):  # 仅显示前10项，防止溢出
+                entry_color = GRAY if os.path.isdir(os.path.join(current_dir, entry)) else LIGHT_GRAY
+                entry_rect = pygame.Rect(50, 50 + i * 30, 500, 30)
+                pygame.draw.rect(popup_surface, entry_color, entry_rect)
+                entry_text = self.SMALLFONT.render(entry, True, BLACK)
+                popup_surface.blit(entry_text, (entry_rect.x + 5, entry_rect.y + 5))
+
+            # 绘制输入框
+            pygame.draw.rect(popup_surface, WHITE, input_box)
+            pygame.draw.rect(popup_surface, input_box_color, input_box, 2)
+            input_surf = self.SMALLFONT.render(input_text, True, BLACK)
+            popup_surface.blit(input_surf, (input_box.x + 5, input_box.y + 5))
+
+            # 绘制确认按钮
+            pygame.draw.rect(popup_surface, button_color, button_rect)
+            popup_surface.blit(button_text, (button_rect.x + (button_rect.width - button_text.get_width()) // 2,
+                                            button_rect.y + (button_rect.height - button_text.get_height()) // 2))
+
+            # 绘制取消按钮
+            pygame.draw.rect(popup_surface, cancel_button_color, cancel_button_rect)
+            popup_surface.blit(cancel_button_text, (cancel_button_rect.x + (cancel_button_rect.width - cancel_button_text.get_width()) // 2,
+                                                    cancel_button_rect.y + (cancel_button_rect.height - cancel_button_text.get_height()) // 2))
+
+            # 将浮窗绘制到主屏幕
+            self.screen.blit(popup_surface, popup_rect.topleft)
+
+            pygame.display.flip()
+
+        return result_path
                     
 # 具体产品（五子棋UI）
 class GomokuUI(UITemplate):
@@ -259,9 +497,25 @@ class GomokuUI(UITemplate):
         
         # 绘制 "悔棋" 按钮
         self.button_undo = self.draw_button(
-            "undo", 
+            "Undo", 
             COMMON_BUTTON_LEFT, 
             GRID_SIZE + 3 * BUTTON_INTERVAL, 
+            update=False
+        )
+        
+        # 绘制 "存储局面" 按钮
+        self.button_store_state = self.draw_button(
+            "Store State", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 4 * BUTTON_INTERVAL, 
+            update=False
+        )
+                
+        # 绘制 "结束回合" 按钮
+        self.button_end_turn = self.draw_button(
+            "End Turn", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 5 * BUTTON_INTERVAL, 
             update=False
         )
                 
@@ -319,7 +573,7 @@ class GoUI(UITemplate):
         
         # 绘制 "悔棋" 按钮
         self.button_undo = self.draw_button(
-            "undo",
+            "Undo",
             COMMON_BUTTON_LEFT,
             GRID_SIZE + 3 * BUTTON_INTERVAL,
             update=False
@@ -327,9 +581,33 @@ class GoUI(UITemplate):
         
         # 绘制 "跳过" 按钮
         self.button_skip = self.draw_button(
-            "skip",
+            "Skip",
             COMMON_BUTTON_LEFT,
             GRID_SIZE + 4 * BUTTON_INTERVAL,
+            update=False
+        )
+        
+        # 绘制 "存储局面" 按钮
+        self.button_store_state = self.draw_button(
+            "Store State", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 5 * BUTTON_INTERVAL, 
+            update=False
+        )
+        
+        # 绘制 "提子" 按钮
+        self.button_capture = self.draw_button(
+            "Capture", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 6 * BUTTON_INTERVAL, 
+            update=False
+        )
+        
+        # 绘制 "结束回合" 按钮
+        self.button_end_turn = self.draw_button(
+            "End Turn", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 7 * BUTTON_INTERVAL, 
             update=False
         )
                 
