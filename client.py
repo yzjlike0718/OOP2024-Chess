@@ -61,16 +61,19 @@ class Client():
         self.caretaker.save_memento(self.game.create_memento())  # 保存当前状态
         self.game.make_move(row=row, col=col, curr_turn=self.turn)  # 在棋盘上落子
 
-    def undo_move(self):
+    def undo_move(self) -> str:
         """
         执行悔棋操作，回到上一个状态。
         """
+        if not self.allow_undo:
+            return "Undo not allowed."
         memento = self.caretaker.undo()  # 获取上一个状态
         if memento is None:
-            print("无法悔棋")
+            return "Undo not allowed."
         else:
             self.game.restore_memento(memento)  # 恢复到上一个状态
         self.allow_undo = False  # 每轮仅允许悔棋一次
+        return "Undo successfully."
 
     def new_turn(self):
         """
@@ -145,8 +148,8 @@ class Client():
                         self.play_game()
                     elif self.UI_platform.undo(mouse_pos=event_val):
                         # 玩家请求悔棋
-                        if self.allow_undo:
-                            self.undo_move()
+                        message = self.undo_move()
+                        self.UI_platform.pop_message(message)
                     elif self.UI_platform.skip(mouse_pos=event_val):
                         # 围棋玩家选择跳过落子
                         self.game.set_skip_last_turn(self.turn, True)
