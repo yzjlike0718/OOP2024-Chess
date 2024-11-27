@@ -33,6 +33,7 @@ class UITemplate():
         self.button_load_state = None  # "加载局面" 按钮
         self.button_capture = None  # "提子" 按钮
         self.button_end_turn = None  # "结束回合" 按钮
+        self.button_hint = None  # "提示" 按钮
         
     def detect_event(self):
         """
@@ -279,7 +280,15 @@ class UITemplate():
         """
         return self.button_end_turn.collidepoint(mouse_pos)
     
-    def pop_message(self, message: str):
+    def view_hints(self, mouse_pos: tuple[int, int]) -> bool:
+        """
+        判断是否点击了“提示”按钮。
+        :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
+        :return bool: 如果鼠标位置与“提示”按钮发生碰撞，则返回 True；否则返回 False。
+        """
+        return self.button_hint.collidepoint(mouse_pos)
+    
+    def pop_message(self, message: str, text_color=RED):
         # 界面参数
         popup_width, popup_height = 600, 400
         popup_surface = pygame.Surface((popup_width, popup_height))
@@ -292,6 +301,30 @@ class UITemplate():
         button_color = BLUE
         button_text = self.SMALLFONT.render("Got it", True, WHITE)
         
+        # 文本显示相关
+        text_margin = 20
+        text_width = popup_width - 2 * text_margin  # 文本区域的最大宽度
+        line_height = 20  # 每行文本的高度
+        y_offset = 50  # 文本从顶部偏移的初始位置
+
+        # 将信息按行分割（自动换行）
+        words = message.split(' ')
+        lines = []
+        current_line = ""
+
+        for word in words:
+            test_line = current_line + word + " "
+            test_surface = self.SMALLFONT.render(test_line, True, text_color)
+            if test_surface.get_width() > text_width:
+                lines.append(current_line.strip())
+                current_line = word + " "
+            else:
+                current_line = test_line
+
+        # 添加最后一行
+        if current_line:
+            lines.append(current_line.strip())
+
         running = True
 
         while running:
@@ -319,9 +352,17 @@ class UITemplate():
             popup_surface.fill(WHITE)
             pygame.draw.rect(popup_surface, BLACK, popup_surface.get_rect(), 2)
 
-            # 信息
-            message_text = self.SMALLFONT.render(message, True, RED)
-            popup_surface.blit(message_text, ((popup_surface.get_width() - message_text.get_width()) // 2, (popup_surface.get_height() - message_text.get_height()) // 2))
+            # 绘制信息
+            if len(lines) == 1:
+                # 居中绘制
+                message_text = self.SMALLFONT.render(message, True, text_color)
+                popup_surface.blit(message_text, ((popup_surface.get_width() - message_text.get_width()) // 2, (popup_surface.get_height() - message_text.get_height()) // 2))
+            else:
+                current_y = y_offset
+                for line in lines:
+                    line_surface = self.SMALLFONT.render(line, True, text_color)
+                    popup_surface.blit(line_surface, (text_margin, current_y))
+                    current_y += line_height
 
             
             # 绘制确认按钮
@@ -533,6 +574,14 @@ class GomokuUI(UITemplate):
             GRID_SIZE + 6 * BUTTON_INTERVAL, 
             update=False
         )
+        
+        # 绘制 "提示" 按钮
+        self.button_hint = self.draw_button(
+            "View Hints", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 7 * BUTTON_INTERVAL, 
+            update=False
+        )
                 
         # 更新屏幕显示
         pygame.display.flip()
@@ -631,6 +680,14 @@ class GoUI(UITemplate):
             "End Turn", 
             COMMON_BUTTON_LEFT, 
             GRID_SIZE + 8 * BUTTON_INTERVAL, 
+            update=False
+        )
+        
+        # 绘制 "提示" 按钮
+        self.button_hint = self.draw_button(
+            "View Hints", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 9 * BUTTON_INTERVAL, 
             update=False
         )
                 

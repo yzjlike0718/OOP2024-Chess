@@ -176,6 +176,8 @@ class Client():
                         self.UI_platform.pop_message(message)
                     elif self.UI_platform.end_turn(mouse_pos=event_val):
                         self.next_turn()
+                    elif self.UI_platform.view_hints(mouse_pos=event_val):
+                        self.UI_platform.pop_message(self.game.get_hints(), text_color=BLACK)
                 elif event_type == pygame.KEYDOWN:
                     if event_val == pygame.K_RETURN:
                         self.next_turn()

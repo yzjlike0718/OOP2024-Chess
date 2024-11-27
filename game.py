@@ -17,6 +17,7 @@ class Game(ABC):
         self.turn_taken: bool = False  # 当前回合的玩家是否已经落子
         self.states_stored: list[str] = []  # 当前游戏存储的历史局面
         self.curr_move: tuple[int, int] = None
+        self.hints: str = None  # 游戏规则，指导玩家下棋
     
     def create_memento(self):
         """
@@ -169,6 +170,12 @@ class Game(ABC):
         是否可以进行下一轮。
         """
         pass
+    
+    def get_hints(self) -> str:
+        """
+        获得当前游戏的提示。
+        """
+        return self.hints
 
 # 具体产品（五子棋）
 class GomokuGame(Game):
@@ -180,6 +187,12 @@ class GomokuGame(Game):
         self.rule = GomokuRule()  # 五子棋规则
         self.chessboard: Chessboard = None  # 棋盘对象
         
+        # 游戏规则，指导玩家下棋
+        self.hints = (
+            "Gomoku Rules: Players alternate placing stones; Black starts. Form a row of 5 stones to win. Stones must stay within the board. "
+            "Buttons: Admit Defeat, Restart, Undo, Store State, Load State, End Turn (or press ENTER)."
+        )
+  
     def capture(self):
         pass
 
@@ -219,6 +232,13 @@ class GoGame(Game):
         self.black_skip_last_turn: bool = False  # 黑棋是否跳过上一回合
         self.white_skip_last_turn: bool = False  # 白棋是否跳过上一回合
         
+        # 游戏规则，指导玩家下棋
+        self.hints = (
+            "Go Rules: Players alternate placing stones; Black starts. Control territory by surrounding empty spaces and capturing opponent's stones. "
+            "Stones with no liberties are captured. The game ends when both players skip or no moves are possible. Scoring: Black gives White 3.25 points (komi). "
+            "Buttons: Admit Defeat, Restart, Undo, Skip, Store State, Load State, Capture, End Turn (or press ENTER)."
+        )
+
     def capture(self):
         """
         执行玩家的提子操作。
