@@ -16,6 +16,7 @@ class Game(ABC):
         self.chessboard: Chessboard = None  # 游戏棋盘
         self.turn_taken: bool = False  # 当前回合的玩家是否已经落子
         self.states_stored: list[str] = []  # 当前游戏存储的历史局面
+        self.curr_move: tuple[int, int] = None
     
     def create_memento(self):
         """
@@ -45,13 +46,24 @@ class Game(ABC):
         """
         self.chessboard = copy.deepcopy(state)
     
-    @abstractmethod
     def make_move(self, row: int, col: int, curr_turn: str):
         """
         执行玩家的落子操作。
         :param row: 落子行坐标
         :param col: 落子列坐标
         :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
+        """
+        self.chessboard.set_chess(row, col, curr_turn)
+        self.set_turn_taken(True)
+        self.curr_move = (row, col)
+        
+    def reset_curr_move(self):
+        self.curr_move = None
+        
+    @abstractmethod
+    def capture(self):
+        """
+        执行玩家的提子操作。
         """
         pass
     
@@ -78,6 +90,8 @@ class Game(ABC):
         :param taken: 是否行棋（布尔值）
         """
         self.turn_taken = taken
+        if taken == False:
+            self.curr_move = None
         
     def get_turn_taken(self):
         """
@@ -148,6 +162,13 @@ class Game(ABC):
             return f"Successfully loaded history state from {file_path}."
         else:
             return "Player of the state to be loaded dosen't match current state."
+        
+    @abstractmethod
+    def next_turn_allowed(self) -> tuple[bool, str]:
+        """
+        是否可以进行下一轮。
+        """
+        pass
 
 # 具体产品（五子棋）
 class GomokuGame(Game):
@@ -159,15 +180,8 @@ class GomokuGame(Game):
         self.rule = GomokuRule()  # 五子棋规则
         self.chessboard: Chessboard = None  # 棋盘对象
         
-    def make_move(self, row, col, curr_turn):
-        """
-        执行玩家的落子操作。
-        :param row: 落子行坐标
-        :param col: 落子列坐标
-        :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
-        """
-        self.chessboard.set_chess(row, col, curr_turn)
-        self.set_turn_taken(True)
+    def capture(self):
+        pass
 
     def allow_winner_check(self):
         """
@@ -184,6 +198,15 @@ class GomokuGame(Game):
         """
         pass
     
+    def next_turn_allowed(self):
+        """
+        是否可以进行下一轮。
+        """
+        if self.turn_taken:
+            return True, None
+        else:
+            return False, "Set chess first."
+    
 # 具体产品（围棋）
 class GoGame(Game):
     def __init__(self) -> None:
@@ -196,17 +219,18 @@ class GoGame(Game):
         self.black_skip_last_turn: bool = False  # 黑棋是否跳过上一回合
         self.white_skip_last_turn: bool = False  # 白棋是否跳过上一回合
         
-    def make_move(self, row, col, curr_turn):
+    def capture(self):
         """
-        执行玩家的落子操作，同时处理提子逻辑。
-        :param row: 落子行坐标
-        :param col: 落子列坐标
-        :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
+        执行玩家的提子操作。
         """
-        self.chessboard.set_chess(row, col, curr_turn)
-        curr_capture = self.rule.get_curr_capture(row, col, self.chessboard)  # 获取可以提的子
-        self.rule.capture(curr_capture, self.chessboard)  # 执行提子操作
-        self.set_turn_taken(True)
+        if self.curr_move is not None:
+            curr_capture = self.rule.get_curr_capture(self.curr_move[0], self.curr_move[1], self.chessboard)  # 获取可以提的子
+            if curr_capture == []:
+                return "No chess to capture."
+            self.rule.capture(curr_capture, self.chessboard)  # 执行提子操作
+            return "Succesfully captured."
+        else:
+            return "Please set chess first."
         
     def allow_winner_check(self):
         """
@@ -232,3 +256,19 @@ class GoGame(Game):
         :param taken: 是否行棋（布尔值）
         """
         self.turn_taken = taken
+        
+    def next_turn_allowed(self):
+        """
+        是否可以进行下一轮。
+        """
+        if not self.turn_taken:
+            return False, "Set chess first."
+        
+        if self.curr_move is None:  # skip case（虚着）
+            return True, None
+        
+        curr_capture = self.rule.get_curr_capture(self.curr_move[0], self.curr_move[1], self.chessboard)  # 获取可以提的子
+        if curr_capture != []:
+            return False, "Capture first."
+        else:
+            return True, None

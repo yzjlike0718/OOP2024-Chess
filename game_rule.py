@@ -45,7 +45,6 @@ class GameRule(ABC):
         """
         pass
     
-    @abstractmethod
     def set_chess(self, row: int, col: int, board: Chessboard, curr_turn: str):
         """
         在棋盘上放置棋子。
@@ -54,7 +53,7 @@ class GameRule(ABC):
         :param board: 当前棋盘状态（Chessboard 对象）
         :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
         """
-        pass
+        board.set_chess(row, col, curr_turn)
 
 # 具体策略类：五子棋规则
 class GomokuRule(GameRule):
@@ -136,16 +135,6 @@ class GomokuRule(GameRule):
         """
         return all(board.get_chess(row, col) is not None for row in range(board.get_size()) for col in range(board.get_size()))
 
-    def set_chess(self, row, col, board, curr_turn):
-        """
-        在棋盘上放置棋子。
-        :param row: 棋子行坐标
-        :param col: 棋子列坐标
-        :param board: 当前棋盘状态（Chessboard 对象）
-        :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
-        """
-        board.set_chess(row, col, curr_turn)
-
 # 具体策略类：围棋规则
 class GoRule(GameRule):
     def get_territory(self, row: int, col: int, board: Chessboard) -> list[(int, int)]:
@@ -191,7 +180,6 @@ class GoRule(GameRule):
         :param board: 棋盘对象
         :return: 是否有气
         """
-        print(f"check has_liberty territory: {territory}")
         for (row, col) in territory:
             neighbors = [(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
             for (r, c) in neighbors:
@@ -207,6 +195,7 @@ class GoRule(GameRule):
         :param board: 棋盘对象
         :return: 可以提的对方棋子位置列表
         """
+        print(f"get_curr_capture: row={row}, col={col}")
         assert self.is_within_board(row, col, board)
         self_color = board.get_chess(row, col)
         rival_color = "WHITE" if self_color == "BLACK" else "BLACK"
@@ -320,16 +309,4 @@ class GoRule(GameRule):
         :return: 是否为平局（布尔值）
         """
         pass  # TODO: 围棋有平局吗？
-    
-    def set_chess(self, row, col, board, curr_turn):
-        """
-        放置棋子，同时进行提子操作。
-        :param row: 棋子行坐标
-        :param col: 棋子列坐标
-        :param board: 棋盘对象
-        :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
-        """
-        board.set_chess(row, col, curr_turn)
-        curr_capture = self.get_curr_capture(row, col, board)
-        self.capture(curr_capture, board)
         
