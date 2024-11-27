@@ -30,6 +30,7 @@ class UITemplate():
         self.button_undo = None  # "悔棋" 按钮
         self.button_skip = None  # "跳过" 按钮
         self.button_store_state = None  # "存储局面" 按钮
+        self.button_load_state = None  # "加载局面" 按钮
         self.button_capture = None  # "提子" 按钮
         self.button_end_turn = None  # "结束回合" 按钮
         
@@ -252,6 +253,14 @@ class UITemplate():
         """
         return self.button_store_state.collidepoint(mouse_pos)
     
+    def load_state(self, mouse_pos: tuple[int, int]) -> bool:
+        """
+        判断是否点击了“加载局面”按钮，并打印跳过的提示。
+        :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
+        :return bool: 如果鼠标位置与“加载局面”按钮发生碰撞，则返回 True；否则返回 False。
+        """
+        return self.button_load_state.collidepoint(mouse_pos)
+    
     def capture(self, mouse_pos: tuple[int, int]) -> bool:
         """
         判断是否点击了“提子”按钮。
@@ -325,12 +334,12 @@ class UITemplate():
 
             pygame.display.flip()
     
-    def select_file(self):
+    def select_file(self, is_store: bool):
         """
         弹出新窗口，用户选择目录，并输入文件名以存储当前局面。
         :return: 用户选择的文件完整路径字符串，如果用户取消则返回空字符串。
         """
-        current_dir = ('./')  # 默认开始于当前目录
+        current_dir = ('./states')
 
         # 界面参数
         popup_width, popup_height = 600, 400
@@ -378,27 +387,25 @@ class UITemplate():
 
                         # 点击确认按钮
                         if button_rect.collidepoint(rel_x, rel_y):
-                            if input_text.strip():
-                                result_path = os.path.join(current_dir, input_text.strip())
-                                running = False
-                            else:
+                            input_text = input_text.strip()
+                            if not input_text and is_store:
                                 self.display_message("Please enter a valid file name!", color=(255, 0, 0),
                                                     left=popup_rect.x + 50, top=popup_rect.y + 250)
+                            else:
+                                result_path = os.path.join(current_dir, input_text) if input_text else current_dir
+                                running = False
 
                         # 点击取消按钮
                         if cancel_button_rect.collidepoint(rel_x, rel_y):
                             running = False
 
                         # 点击目录项
-                        i = 0
-                        for entry in os.listdir(current_dir):
-                            if os.path.isfile(entry):
-                                continue
+                        entry_items = os.listdir(current_dir) if os.path.isdir(current_dir) else []
+                        for i, entry in enumerate(entry_items):
                             entry_rect = pygame.Rect(50, 50 + i * 30, 500, 30)
-                            i += 1
                             if entry_rect.collidepoint(rel_x, rel_y):
                                 selected_path = os.path.join(current_dir, entry)
-                                if os.path.isdir(selected_path):
+                                if (os.path.isdir(selected_path) and is_store) or not is_store:
                                     current_dir = selected_path
                                 break
 
@@ -426,7 +433,7 @@ class UITemplate():
             popup_surface.blit(title_text, (50, 20))
 
             # 绘制目录内容
-            entries = [x for x in os.listdir(current_dir) if os.path.isdir(x)]
+            entries = os.listdir(current_dir) if os.path.isdir(current_dir) else []
             for i, entry in enumerate(entries[:10]):  # 仅显示前10项，防止溢出
                 entry_color = GRAY if os.path.isdir(os.path.join(current_dir, entry)) else LIGHT_GRAY
                 entry_rect = pygame.Rect(50, 50 + i * 30, 500, 30)
@@ -510,12 +517,20 @@ class GomokuUI(UITemplate):
             GRID_SIZE + 4 * BUTTON_INTERVAL, 
             update=False
         )
+        
+        # 绘制 "加载局面" 按钮
+        self.button_load_state = self.draw_button(
+            "Load State", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 5 * BUTTON_INTERVAL, 
+            update=False
+        )
                 
         # 绘制 "结束回合" 按钮
         self.button_end_turn = self.draw_button(
             "End Turn", 
             COMMON_BUTTON_LEFT, 
-            GRID_SIZE + 5 * BUTTON_INTERVAL, 
+            GRID_SIZE + 6 * BUTTON_INTERVAL, 
             update=False
         )
                 
@@ -595,11 +610,19 @@ class GoUI(UITemplate):
             update=False
         )
         
+        # 绘制 "加载局面" 按钮
+        self.button_load_state = self.draw_button(
+            "Load State", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 6 * BUTTON_INTERVAL, 
+            update=False
+        )
+        
         # 绘制 "提子" 按钮
         self.button_capture = self.draw_button(
             "Capture", 
             COMMON_BUTTON_LEFT, 
-            GRID_SIZE + 6 * BUTTON_INTERVAL, 
+            GRID_SIZE + 7 * BUTTON_INTERVAL, 
             update=False
         )
         
@@ -607,7 +630,7 @@ class GoUI(UITemplate):
         self.button_end_turn = self.draw_button(
             "End Turn", 
             COMMON_BUTTON_LEFT, 
-            GRID_SIZE + 7 * BUTTON_INTERVAL, 
+            GRID_SIZE + 8 * BUTTON_INTERVAL, 
             update=False
         )
                 

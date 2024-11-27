@@ -146,8 +146,13 @@ class Client():
                             self.play_game()
                     elif self.UI_platform.store_state(mouse_pos=event_val):
                         # 玩家请求存储当前局面
-                        file_dir = self.UI_platform.select_file()
+                        file_dir = self.UI_platform.select_file(is_store=True)
                         message = self.game.store_state(file_dir, self.turn)
+                        self.UI_platform.pop_message(message)
+                    elif self.UI_platform.load_state(mouse_pos=event_val):
+                        # 玩家请求加载历史局面
+                        file_dir = self.UI_platform.select_file(is_store=False)
+                        message = self.game.load_state(file_dir, self.turn)
                         self.UI_platform.pop_message(message)
                     elif self.UI_platform.capture(mouse_pos=event_val):
                         # 围棋玩家请求提子

@@ -1,3 +1,5 @@
+import copy
+
 # 棋盘类
 class Chessboard:
     def __init__(self, size: int) -> None:
@@ -42,3 +44,10 @@ class Chessboard:
         :return: 棋子的类型（如 "BLACK"、"WHITE" 或 None）
         """
         return self.board[row][col]
+    
+    def set_board(self, board: list[str]):
+        """
+        设置新棋盘
+        :param board: 棋盘
+        """
+        self.board = copy.deepcopy(board)

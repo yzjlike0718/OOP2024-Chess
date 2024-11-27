@@ -15,38 +15,35 @@ class Game(ABC):
         self.rule: GameRule = None  # 游戏规则
         self.chessboard: Chessboard = None  # 游戏棋盘
         self.turn_taken: bool = False  # 当前回合的玩家是否已经落子
+        self.states_stored: list[str] = []  # 当前游戏存储的历史局面
     
-    @abstractmethod
-    def create_memento(self) -> Memento:
+    def create_memento(self):
         """
         创建当前棋盘状态的备忘录。
         :return: 保存棋盘状态的 Memento 对象
         """
-        pass
-    
-    @abstractmethod
+        return Memento(self.chessboard)
+        
     def restore_memento(self, memento: Memento):
         """
         恢复备忘录中的棋盘状态。
         :param memento: 保存棋盘状态的 Memento 对象
         """
-        pass
+        self.chessboard = copy.deepcopy(memento.get_state())
     
-    @abstractmethod
-    def get_state(self) -> Chessboard:
+    def get_state(self):
         """
         获取当前棋盘状态。
         :return: 当前棋盘状态（Chessboard 对象）
         """
-        pass
+        return self.chessboard
     
-    @abstractmethod
     def set_state(self, state: Chessboard):
         """
         设置棋盘状态。
         :param state: 要设置的棋盘状态（Chessboard 对象）
         """
-        pass
+        self.chessboard = copy.deepcopy(state)
     
     @abstractmethod
     def make_move(self, row: int, col: int, curr_turn: str):
@@ -75,31 +72,82 @@ class Game(ABC):
         """
         pass
     
-    @abstractmethod
-    def set_turn_taken(self, taken: bool):
+    def set_turn_taken(self, taken):
         """
         设置当前回合的玩家是否已经落子。
         :param taken: 是否行棋（布尔值）
         """
-        pass
-    
-    @abstractmethod
-    def get_turn_taken(self) -> bool:
+        self.turn_taken = taken
+        
+    def get_turn_taken(self):
         """
         获得当前回合的玩家是否已经落子。
         :ruturn 是否行棋（布尔值）
         """
-        pass
+        return self.turn_taken
     
-    @abstractmethod
-    def store_state(self, file_dir: str, curr_turn: str) -> str:
+    def get_next_player_for_curr_state(self, curr_turn):
+        """
+        获得下一回合的玩家。
+        :ruturn 下一回合的玩家
+        """
+        if self.get_turn_taken():
+            return "WHITE" if curr_turn == "BLACK" else "BLACK"
+        else:
+            return curr_turn
+    
+    def store_state(self, file_dir, curr_turn):
         """
         存储当前局面和当前局面对应的下一个行棋方到指定文件。
         :param file_dir: 指定文件。
         :param curr_turn: 当前回合的玩家。
         :ruturn 成功/不成功
         """
-        pass
+        base_name = os.path.splitext(file_dir)[0]
+        file_path = base_name + ".json"
+        if os.path.exists(file_path):
+            return f"Please don't cover existing file {file_path}."
+        
+        next_player_for_curr_state = self.get_next_player_for_curr_state(curr_turn)
+            
+        file_dir = os.path.dirname(file_path)  # 提取目录部分
+        try:
+            os.makedirs(file_dir, exist_ok=True)
+        except Exception as e:
+            error_message = f"Failed to create directory '{file_dir}': {str(e)}"
+            return error_message
+        
+        state = {"next_player_for_curr_state": next_player_for_curr_state,
+                 "chessboard": self.chessboard.board}
+        with open(file_path, 'w') as f:
+            json.dump(state, f)
+            
+        self.states_stored.append(file_path)
+        
+        return f"Successfully stored current state to {file_path}."
+    
+    def load_state(self, file_path: str, curr_turn: str) -> str:
+        """
+        从指定文件加载历史局面和历史局面对应的下一个行棋方。
+        :param file_dir: 指定文件。
+        :param curr_turn: 当前回合的玩家。
+        :ruturn 成功/不成功
+        """
+        try:
+            with open(file_path, 'r') as f:
+                state = json.load(f)
+        except Exception as e:
+            error_message = f"Failed to load '{file_path}': {str(e)}"
+            return error_message
+        
+        if file_path not in self.states_stored:
+            return f"File {file_path} isn't a valid state for current game."
+        
+        if (self.turn_taken and self.get_next_player_for_curr_state(curr_turn) == state["next_player_for_curr_state"]) or (not self.turn_taken and curr_turn == state["next_player_for_curr_state"]):
+            self.chessboard.set_board(state["chessboard"])
+            return f"Successfully loaded history state from {file_path}."
+        else:
+            return "Player of the state to be loaded dosen't match current state."
 
 # 具体产品（五子棋）
 class GomokuGame(Game):
@@ -111,34 +159,6 @@ class GomokuGame(Game):
         self.rule = GomokuRule()  # 五子棋规则
         self.chessboard: Chessboard = None  # 棋盘对象
         
-    def create_memento(self):
-        """
-        创建当前棋盘状态的备忘录。
-        :return: 保存棋盘状态的 Memento 对象
-        """
-        return Memento(self.chessboard)
-        
-    def restore_memento(self, memento: Memento):
-        """
-        恢复备忘录中的棋盘状态。
-        :param memento: 保存棋盘状态的 Memento 对象
-        """
-        self.chessboard = copy.deepcopy(memento.get_state())
-    
-    def get_state(self):
-        """
-        获取当前棋盘状态。
-        :return: 当前棋盘状态（Chessboard 对象）
-        """
-        return self.chessboard
-
-    def set_state(self, state: Chessboard):
-        """
-        设置棋盘状态。
-        :param state: 要设置的棋盘状态（Chessboard 对象）
-        """
-        self.chessboard = copy.deepcopy(state)
-
     def make_move(self, row, col, curr_turn):
         """
         执行玩家的落子操作。
@@ -164,51 +184,6 @@ class GomokuGame(Game):
         """
         pass
     
-    def set_turn_taken(self, taken):
-        """
-        设置当前回合的玩家是否已经落子。
-        :param taken: 是否行棋（布尔值）
-        """
-        self.turn_taken = taken
-        
-    def get_turn_taken(self):
-        """
-        获得当前回合的玩家是否已经落子。
-        :ruturn 是否行棋（布尔值）
-        """
-        return self.turn_taken
-    
-    def store_state(self, file_dir, curr_turn):
-        """
-        存储当前局面和当前局面对应的下一个行棋方到指定文件。
-        :param file_dir: 指定文件。
-        :param curr_turn: 当前回合的玩家。
-        :ruturn 成功/不成功
-        """
-        base_name = os.path.splitext(file_dir)[0]
-        file_path = base_name + ".json"
-        if os.path.exists(file_path):
-            return f"Please don't cover existing file {file_path}."
-        
-        if self.get_turn_taken():
-            next_player_for_curr_state = "WHITE" if curr_turn == "BLACK" else "BLACK"
-        else:
-            next_player_for_curr_state = curr_turn
-            
-        file_dir = os.path.dirname(file_path)  # 提取目录部分
-        try:
-            os.makedirs(file_dir, exist_ok=True)
-        except Exception as e:
-            error_message = f"Failed to create directory '{file_dir}': {str(e)}"
-            return error_message
-        
-        state = {"next_player_for_curr_state": next_player_for_curr_state,
-                 "chessboard": self.chessboard.board}
-        with open(file_path, 'w') as f:
-            json.dump(state, f)
-        
-        return f"Successfully stored current state to {file_path}."
-
 # 具体产品（围棋）
 class GoGame(Game):
     def __init__(self) -> None:
@@ -220,34 +195,6 @@ class GoGame(Game):
         self.chessboard: Chessboard = None  # 棋盘对象
         self.black_skip_last_turn: bool = False  # 黑棋是否跳过上一回合
         self.white_skip_last_turn: bool = False  # 白棋是否跳过上一回合
-        
-    def create_memento(self):
-        """
-        创建当前棋盘状态的备忘录。
-        :return: 保存棋盘状态的 Memento 对象
-        """
-        return Memento(self.chessboard)
-        
-    def restore_memento(self, memento: Memento):
-        """
-        恢复备忘录中的棋盘状态。
-        :param memento: 保存棋盘状态的 Memento 对象
-        """
-        self.chessboard = copy.deepcopy(memento.get_state())
-    
-    def get_state(self):
-        """
-        获取当前棋盘状态。
-        :return: 当前棋盘状态（Chessboard 对象）
-        """
-        return self.chessboard
-
-    def set_state(self, state: Chessboard):
-        """
-        设置棋盘状态。
-        :param state: 要设置的棋盘状态（Chessboard 对象）
-        """
-        self.chessboard = copy.deepcopy(state)
         
     def make_move(self, row, col, curr_turn):
         """
@@ -285,36 +232,3 @@ class GoGame(Game):
         :param taken: 是否行棋（布尔值）
         """
         self.turn_taken = taken
-        
-    def get_turn_taken(self):
-        """
-        获得当前回合的玩家是否已经落子。
-        :ruturn 是否行棋（布尔值）
-        """
-        return self.turn_taken
-    
-    def store_state(self, file_dir, curr_turn):
-        """
-        存储当前局面和当前局面对应的下一个行棋方到指定文件。
-        :param file_dir: 指定文件。
-        :param curr_turn: 当前回合的玩家。
-        :ruturn 成功/不成功
-        """
-        base_name = os.path.splitext(file_dir)[0]
-        file_dir = base_name + ".json"
-        if os.path.exists(file_dir):
-            return f"Please don't cover existing file {file_dir}."
-        if self.get_turn_taken():
-            next_player_for_curr_state = "WHITE" if curr_turn == "BLACK" else "BLACK"
-        else:
-            next_player_for_curr_state = curr_turn
-        try:
-            os.makedirs(file_dir)
-        except Exception as e:
-            error_message = f"Failed to create directory '{file_dir}': {str(e)}"
-            return error_message
-        
-        state = {"next_player_for_curr_state": next_player_for_curr_state,
-                 "chessboard": self.chessboard.board}
-        with open(file_dir, 'w') as f:
-                json.dump(state, f)
