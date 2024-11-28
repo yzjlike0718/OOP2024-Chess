@@ -19,6 +19,8 @@ class Client():
         self.UI_platform: UITemplate = UITemplate()  # 当前的 UI 模板
         self.winner: str = None  # 游戏的获胜者
         self.allow_undo: bool = True  # 是否允许当前玩家悔棋
+        self.player1 = None
+        self.player2 = None
 
     def choose_game(self, game_name: str=None):
         """
@@ -108,7 +110,25 @@ class Client():
             self.new_turn()  # 切换到下一轮
         else:
             self.UI_platform.pop_message(message)
-
+            
+    def init_player(self):
+        """
+        玩家登录或注册。
+        """
+        is_guest, is_AI, is_registered_user, username, password, ai_level = self.UI_platform.choose_player()
+        if is_guest:
+            self.player1 = "GUEST"
+            return
+        if is_AI:
+            raise NotImplementedError
+        # 用户输入 username 和 password
+        if is_registered_user:
+            # 已注册用户登陆
+            pass
+        else:
+            # 未登录用户注册
+            pass
+        
     def play_game(self, game_name: str=None, board_size: int=None):  # TODO: 考虑作为模板方法
         """
         开始游戏主循环。
@@ -122,6 +142,7 @@ class Client():
         self.allow_undo = True
         self.choose_game(game_name)  # 选择游戏
         self.set_game()  # 创建游戏和 UI
+        self.init_player()  # 玩家登录或注册，包括游客玩家或AI玩家
         self.game.set_turn_taken(False)  # 新游戏的玩家还没有落子
         self.init_board(board_size)  # 初始化棋盘
         

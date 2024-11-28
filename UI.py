@@ -4,6 +4,7 @@ from commons import *
 from chessboard import *
 import os
 import string
+from abc import abstractmethod
 
 # UI模板
 class UITemplate():
@@ -25,6 +26,11 @@ class UITemplate():
         pygame.display.set_caption("Chess Game Platform")  # 设置窗口标题
         self.background_image = pygame.transform.scale(pygame.image.load("pics/backgroud.jpeg"), (SCREEN_WIDTH, SCREEN_HEIGHT))
         
+        self.popup_width, self.popup_height = 600, 400
+        self.popup_surface = pygame.Surface((self.popup_width, self.popup_height))
+        self.popup_rect = self.popup_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        self.popup_surface.fill(WHITE)
+        
         self.button_admit_defeat = None  # "认输" 按钮
         self.button_restart = None  # "重新开始" 按钮
         self.button_undo = None  # "悔棋" 按钮
@@ -33,6 +39,8 @@ class UITemplate():
         self.button_capture = None  # "提子" 按钮
         self.button_end_turn = None  # "结束回合" 按钮
         self.button_hint = None  # "提示" 按钮
+        
+        self.AI_available = False  # 是否提供 AI 玩家
         
     def detect_event(self):
         """
@@ -49,8 +57,7 @@ class UITemplate():
                 return pygame.KEYDOWN, event.key
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 return pygame.MOUSEBUTTONDOWN, pygame.mouse.get_pos()
-        
-        
+             
     def draw_button(self, text, left, top, width=BUTTON_WIDTH, height=BUTTON_HEIGHT, bg_color=WHITE, text_color=BLACK, update=True) -> pygame.Rect:
         """
         绘制一个按钮。
@@ -207,11 +214,168 @@ class UITemplate():
                     
         self.display_right_sidebar(turn)
 
+    @ abstractmethod
     def display_right_sidebar(self):
         """
         绘制右侧操作面板（具体实现由子类提供）。
         """
         pass
+        
+    def choose_player(self):
+        """
+        弹窗1：
+            选择玩家类型（已注册用户，未注册用户，游客，AI）。
+        弹窗2：
+            已注册用户：输入账号、密码。
+            未注册用户：输入账号、密码。
+            AI：选择AI等级（一级， 二级， 三级）。
+            确认键：关闭两个弹窗。
+        :return: is_guest, is_AI, is_registered_user, username, password, ai_level
+        """
+        pygame.draw.rect(self.popup_surface, BLACK, self.popup_surface.get_rect(), 2)
+
+        # 初始化选项
+        player_type = None  # 玩家类型
+        username, password, ai_level = "", "", None
+        is_guest, is_AI, is_registered_user = False, False, False
+        input_active = {"username": False, "password": False}
+
+        # 按钮定义
+        button_registered = pygame.Rect(50, 50, 300, 40)
+        button_unregistered = pygame.Rect(50, 100, 300, 40)
+        button_guest = pygame.Rect(50, 150, 300, 40)
+        button_AI = pygame.Rect(50, 200, 300, 40)
+        button_confirm = pygame.Rect(250, 350, 100, 40)
+        confirm_text = self.SMALLFONT.render("Confirm", True, WHITE)
+
+        # 输入框定义
+        input_username = pygame.Rect(50, 50, 300, 40)
+        input_password = pygame.Rect(50, 130, 300, 40)
+        input_texts = {"username": "", "password": ""}
+
+        # AI等级选项
+        ai_buttons = [
+            pygame.Rect(50, 50, 200, 40),
+            pygame.Rect(50, 100, 200, 40),
+            pygame.Rect(50, 150, 200, 40),
+        ]
+        ai_texts = ["Level 1", "Level 2", "Level 3"]
+
+        running = True
+        while running:
+            self.popup_surface.fill(WHITE)
+            pygame.draw.rect(self.popup_surface, BLACK, self.popup_surface.get_rect(), 2)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+                # 鼠标点击事件
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = event.pos
+                    mouse_x, mouse_y = event.pos
+                    mouse_pos = (mouse_x - self.popup_rect.x, mouse_y - self.popup_rect.y)
+
+                    # 第一弹窗选择玩家类型
+                    if player_type is None:
+                        if button_registered.collidepoint(mouse_pos):
+                            player_type = "registered"
+                            is_registered_user = True
+                        elif button_unregistered.collidepoint(mouse_pos):
+                            player_type = "unregistered"
+                        elif button_guest.collidepoint(mouse_pos):
+                            player_type = "guest"
+                            is_guest = True
+                            running = False
+                        elif self.AI_available and button_AI.collidepoint(mouse_pos):
+                            player_type = "AI"
+
+                    # 第二弹窗输入信息
+                    elif player_type in ["registered", "unregistered"]:
+                        if input_username.collidepoint(mouse_pos):
+                            input_active["username"] = True
+                            input_active["password"] = False
+                        elif input_password.collidepoint(mouse_pos):
+                            input_active["username"] = False
+                            input_active["password"] = True
+                        else:
+                            input_active = {"username": False, "password": False}
+                        # 点击确认键退出
+                        if button_confirm.collidepoint(mouse_pos):
+                            username = input_texts["username"]
+                            password = input_texts["password"]
+                            running = False
+
+                    elif player_type == "AI":
+                        for i, button in enumerate(ai_buttons):
+                            if button.collidepoint(mouse_pos):
+                                ai_level = i + 1
+                                is_AI = True
+                                running = False
+
+                # 键盘输入事件
+                if event.type == pygame.KEYDOWN and player_type in ["registered", "unregistered"]:
+                    if input_active["username"]:
+                        if event.key == pygame.K_BACKSPACE:
+                            input_texts["username"] = input_texts["username"][:-1]
+                        else:
+                            input_texts["username"] += event.unicode
+                    elif input_active["password"]:
+                        if event.key == pygame.K_BACKSPACE:
+                            input_texts["password"] = input_texts["password"][:-1]
+                        else:
+                            input_texts["password"] += event.unicode
+
+            # 第一弹窗：选择玩家类型
+            if player_type is None:
+                pygame.draw.rect(self.popup_surface, GRAY, button_registered)
+                pygame.draw.rect(self.popup_surface, GRAY, button_unregistered)
+                pygame.draw.rect(self.popup_surface, GRAY, button_guest)
+                if self.AI_available:
+                    pygame.draw.rect(self.popup_surface, GRAY, button_AI)
+
+                self.popup_surface.blit(self.FONT.render("Registered User", True, BLACK), (60, 55))
+                self.popup_surface.blit(self.FONT.render("Unregistered User", True, BLACK), (60, 105))
+                self.popup_surface.blit(self.FONT.render("Guest", True, BLACK), (60, 155))
+                if self.AI_available:
+                    self.popup_surface.blit(self.FONT.render("AI", True, BLACK), (60, 205))
+
+            # 第二弹窗：已注册或未注册用户
+            elif player_type in ["registered", "unregistered"]:
+                if input_active["username"]:
+                    pygame.draw.rect(self.popup_surface, BLUE, input_username)
+                    username_color = WHITE
+                else:
+                    pygame.draw.rect(self.popup_surface, GRAY, input_username)
+                    username_color = BLACK
+                if input_active["password"]:
+                    pygame.draw.rect(self.popup_surface, BLUE, input_password)
+                    password_color = WHITE
+                else:
+                    pygame.draw.rect(self.popup_surface, GRAY, input_password)
+                    password_color = BLACK
+
+                pygame.draw.rect(self.popup_surface, BLUE, button_confirm)
+                self.popup_surface.blit(confirm_text, (button_confirm.x + (button_confirm.width - confirm_text.get_width()) // 2,
+                                            button_confirm.y + (button_confirm.height - confirm_text.get_height()) // 2))
+
+
+                self.popup_surface.blit(self.FONT.render("Username:", True, BLACK), (50, 20))
+                self.popup_surface.blit(self.FONT.render(input_texts["username"], True, username_color), (55, 55))
+                self.popup_surface.blit(self.FONT.render("Password:", True, BLACK), (50, 100))
+                self.popup_surface.blit(self.FONT.render(input_texts["password"], True, password_color), (55, 135))
+
+            # 第二弹窗：AI选择等级
+            elif player_type == "AI":
+                for i, button in enumerate(ai_buttons):
+                    pygame.draw.rect(self.popup_surface, GRAY, button)
+                    self.popup_surface.blit(self.FONT.render(ai_texts[i], True, BLACK), (button.x + 10, button.y + 5))
+
+            self.screen.blit(self.popup_surface, self.popup_rect.topleft)
+            pygame.display.flip()
+
+        return is_guest, is_AI, is_registered_user, username, password, ai_level
         
     def admit_defeat(self, mouse_pos: tuple[int, int]):
         """
@@ -285,11 +449,8 @@ class UITemplate():
         if message is None:
             return
         # 界面参数
-        popup_width, popup_height = 600, 400
-        popup_surface = pygame.Surface((popup_width, popup_height))
-        popup_rect = popup_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-        popup_surface.fill(WHITE)
-        pygame.draw.rect(popup_surface, BLACK, popup_surface.get_rect(), 2)
+        self.popup_surface.fill(WHITE)
+        pygame.draw.rect(self.popup_surface, BLACK, self.popup_surface.get_rect(), 2)
         
         # 按钮
         button_rect = pygame.Rect(250, 350, 100, 40)
@@ -298,7 +459,7 @@ class UITemplate():
         
         # 文本显示相关
         text_margin = 20
-        text_width = popup_width - 2 * text_margin  # 文本区域的最大宽度
+        text_width = self.popup_width - 2 * text_margin  # 文本区域的最大宽度
         line_height = 20  # 每行文本的高度
         y_offset = 50  # 文本从顶部偏移的初始位置
 
@@ -331,8 +492,8 @@ class UITemplate():
 
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = event.pos
-                    if popup_rect.collidepoint(event.pos):
-                        rel_x, rel_y = mouse_x - popup_rect.x, mouse_y - popup_rect.y
+                    if self.popup_rect.collidepoint(event.pos):
+                        rel_x, rel_y = mouse_x - self.popup_rect.x, mouse_y - self.popup_rect.y
                         
                         # 点击确认按钮
                         if button_rect.collidepoint(rel_x, rel_y):
@@ -344,29 +505,29 @@ class UITemplate():
             self.screen.blit(overlay, (0, 0))
 
             # 绘制浮窗
-            popup_surface.fill(WHITE)
-            pygame.draw.rect(popup_surface, BLACK, popup_surface.get_rect(), 2)
+            self.popup_surface.fill(WHITE)
+            pygame.draw.rect(self.popup_surface, BLACK, self.popup_surface.get_rect(), 2)
 
             # 绘制信息
             if len(lines) == 1:
                 # 居中绘制
                 message_text = self.SMALLFONT.render(message, True, text_color)
-                popup_surface.blit(message_text, ((popup_surface.get_width() - message_text.get_width()) // 2, (popup_surface.get_height() - message_text.get_height()) // 2))
+                self.popup_surface.blit(message_text, ((self.popup_surface.get_width() - message_text.get_width()) // 2, (self.popup_surface.get_height() - message_text.get_height()) // 2))
             else:
                 current_y = y_offset
                 for line in lines:
                     line_surface = self.SMALLFONT.render(line, True, text_color)
-                    popup_surface.blit(line_surface, (text_margin, current_y))
+                    self.popup_surface.blit(line_surface, (text_margin, current_y))
                     current_y += line_height
 
             
             # 绘制确认按钮
-            pygame.draw.rect(popup_surface, button_color, button_rect)
-            popup_surface.blit(button_text, (button_rect.x + (button_rect.width - button_text.get_width()) // 2,
+            pygame.draw.rect(self.popup_surface, button_color, button_rect)
+            self.popup_surface.blit(button_text, (button_rect.x + (button_rect.width - button_text.get_width()) // 2,
                                             button_rect.y + (button_rect.height - button_text.get_height()) // 2))
 
             # 将浮窗绘制到主屏幕
-            self.screen.blit(popup_surface, popup_rect.topleft)
+            self.screen.blit(self.popup_surface, self.popup_rect.topleft)
 
             pygame.display.flip()
     
@@ -378,11 +539,8 @@ class UITemplate():
         current_dir = ('./states')
 
         # 界面参数
-        popup_width, popup_height = 600, 400
-        popup_surface = pygame.Surface((popup_width, popup_height))
-        popup_rect = popup_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
-        popup_surface.fill(WHITE)
-        pygame.draw.rect(popup_surface, BLACK, popup_surface.get_rect(), 2)
+        self.popup_surface.fill(WHITE)
+        pygame.draw.rect(self.popup_surface, BLACK, self.popup_surface.get_rect(), 2)
 
         # 输入框
         input_box_color = BLACK
@@ -410,8 +568,8 @@ class UITemplate():
 
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_x, mouse_y = event.pos
-                    if popup_rect.collidepoint(event.pos):
-                        rel_x, rel_y = mouse_x - popup_rect.x, mouse_y - popup_rect.y
+                    if self.popup_rect.collidepoint(event.pos):
+                        rel_x, rel_y = mouse_x - self.popup_rect.x, mouse_y - self.popup_rect.y
 
                         # 点击输入框
                         if input_box.collidepoint(rel_x, rel_y):
@@ -426,7 +584,7 @@ class UITemplate():
                             input_text = input_text.strip()
                             if not input_text and is_store:
                                 self.display_message("Please enter a valid file name!", color=(255, 0, 0),
-                                                    left=popup_rect.x + 50, top=popup_rect.y + 250)
+                                                    left=self.popup_rect.x + 50, top=self.popup_rect.y + 250)
                             else:
                                 result_path = os.path.join(current_dir, input_text) if input_text else current_dir
                                 running = False
@@ -461,40 +619,40 @@ class UITemplate():
             self.screen.blit(overlay, (0, 0))
 
             # 绘制浮窗
-            popup_surface.fill(WHITE)
-            pygame.draw.rect(popup_surface, BLACK, popup_surface.get_rect(), 2)
+            self.popup_surface.fill(WHITE)
+            pygame.draw.rect(self.popup_surface, BLACK, self.popup_surface.get_rect(), 2)
 
             # 标题
             title_text = self.SMALLFONT.render(f"Current Directory: {current_dir}", True, BLACK)
-            popup_surface.blit(title_text, (50, 20))
+            self.popup_surface.blit(title_text, (50, 20))
 
             # 绘制目录内容
             entries = os.listdir(current_dir) if os.path.isdir(current_dir) else []
             for i, entry in enumerate(entries[:10]):  # 仅显示前10项，防止溢出
                 entry_color = GRAY if os.path.isdir(os.path.join(current_dir, entry)) else LIGHT_GRAY
                 entry_rect = pygame.Rect(50, 50 + i * 30, 500, 30)
-                pygame.draw.rect(popup_surface, entry_color, entry_rect)
+                pygame.draw.rect(self.popup_surface, entry_color, entry_rect)
                 entry_text = self.SMALLFONT.render(entry, True, BLACK)
-                popup_surface.blit(entry_text, (entry_rect.x + 5, entry_rect.y + 5))
+                self.popup_surface.blit(entry_text, (entry_rect.x + 5, entry_rect.y + 5))
 
             # 绘制输入框
-            pygame.draw.rect(popup_surface, WHITE, input_box)
-            pygame.draw.rect(popup_surface, input_box_color, input_box, 2)
+            pygame.draw.rect(self.popup_surface, WHITE, input_box)
+            pygame.draw.rect(self.popup_surface, input_box_color, input_box, 2)
             input_surf = self.SMALLFONT.render(input_text, True, BLACK)
-            popup_surface.blit(input_surf, (input_box.x + 5, input_box.y + 5))
+            self.popup_surface.blit(input_surf, (input_box.x + 5, input_box.y + 5))
 
             # 绘制确认按钮
-            pygame.draw.rect(popup_surface, button_color, button_rect)
-            popup_surface.blit(button_text, (button_rect.x + (button_rect.width - button_text.get_width()) // 2,
+            pygame.draw.rect(self.popup_surface, button_color, button_rect)
+            self.popup_surface.blit(button_text, (button_rect.x + (button_rect.width - button_text.get_width()) // 2,
                                             button_rect.y + (button_rect.height - button_text.get_height()) // 2))
 
             # 绘制取消按钮
-            pygame.draw.rect(popup_surface, cancel_button_color, cancel_button_rect)
-            popup_surface.blit(cancel_button_text, (cancel_button_rect.x + (cancel_button_rect.width - cancel_button_text.get_width()) // 2,
+            pygame.draw.rect(self.popup_surface, cancel_button_color, cancel_button_rect)
+            self.popup_surface.blit(cancel_button_text, (cancel_button_rect.x + (cancel_button_rect.width - cancel_button_text.get_width()) // 2,
                                                     cancel_button_rect.y + (cancel_button_rect.height - cancel_button_text.get_height()) // 2))
 
             # 将浮窗绘制到主屏幕
-            self.screen.blit(popup_surface, popup_rect.topleft)
+            self.screen.blit(self.popup_surface, self.popup_rect.topleft)
 
             pygame.display.flip()
 
@@ -508,6 +666,7 @@ class GomokuUI(UITemplate):
     """
     def __init__(self) -> None:
         super().__init__()
+        self.AI_available = True
         
     def display_right_sidebar(self, turn):
         """
@@ -572,7 +731,8 @@ class GomokuUI(UITemplate):
                 
         # 更新屏幕显示
         pygame.display.flip()
-        
+
+          
 # 具体产品（围棋UI）
 class GoUI(UITemplate):
     """
@@ -664,4 +824,3 @@ class GoUI(UITemplate):
                 
         # 更新屏幕显示
         pygame.display.flip()
-        
