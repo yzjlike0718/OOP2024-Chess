@@ -5,6 +5,7 @@ import pygame
 from commons import *
 from UI_factory import *
 from UI import *
+from account_manager import *
 
 class Client():
     def __init__(self):
@@ -21,6 +22,7 @@ class Client():
         self.allow_undo: bool = True  # 是否允许当前玩家悔棋
         self.player1 = None
         self.player2 = None
+        self.account_manager = ProxyAccountManager(RealAccountManager())
 
     def choose_game(self, game_name: str=None):
         """
@@ -111,23 +113,37 @@ class Client():
         else:
             self.UI_platform.pop_message(message)
             
-    def init_player(self):
+    def init_player(self, is_first_hand: bool) -> str:
         """
         玩家登录或注册。
+        :param: is_first_hand 是否为先手玩家。
+        :return: 设置玩家是否成功，玩家名。
         """
+        if is_first_hand:
+            message = "Set the first player."
+        else:
+            message = "Set the second player."
+        self.UI_platform.pop_message(message)
         is_guest, is_AI, is_registered_user, username, password, ai_level = self.UI_platform.choose_player()
         if is_guest:
-            self.player1 = "GUEST"
-            return
+            return "GUEST"
         if is_AI:
-            raise NotImplementedError
+            return f"AI-level{ai_level}"
         # 用户输入 username 和 password
         if is_registered_user:
             # 已注册用户登陆
-            pass
+            if username == self.player1:
+                is_valid = False
+                message = "The second player cannot be the same as the first."
+            else:
+                is_valid, message = self.account_manager.login(username, password)
         else:
             # 未登录用户注册
-            pass
+            is_valid, message = self.account_manager.register(username, password)
+        self.UI_platform.pop_message(message)
+        if not is_valid:
+            username = None
+        return username
         
     def play_game(self, game_name: str=None, board_size: int=None):  # TODO: 考虑作为模板方法
         """
@@ -142,7 +158,13 @@ class Client():
         self.allow_undo = True
         self.choose_game(game_name)  # 选择游戏
         self.set_game()  # 创建游戏和 UI
-        self.init_player()  # 玩家登录或注册，包括游客玩家或AI玩家
+        
+        # 玩家登录或注册，包括游客玩家或AI玩家
+        while self.player1 is None:
+            self.player1 = self.init_player(True)
+        while self.player2 is None:
+            self.player2 = self.init_player(False)
+
         self.game.set_turn_taken(False)  # 新游戏的玩家还没有落子
         self.init_board(board_size)  # 初始化棋盘
         
