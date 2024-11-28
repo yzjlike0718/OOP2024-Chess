@@ -101,16 +101,6 @@ class Game(ABC):
         """
         return self.turn_taken
     
-    def get_next_player_for_curr_state(self, curr_turn):
-        """
-        获得下一回合的玩家。
-        :ruturn 下一回合的玩家
-        """
-        if self.get_turn_taken():
-            return "WHITE" if curr_turn == "BLACK" else "BLACK"
-        else:
-            return curr_turn
-    
     def store_state(self, file_dir, curr_turn):
         """
         存储当前局面和当前局面对应的下一个行棋方到指定文件。
@@ -122,8 +112,6 @@ class Game(ABC):
         file_path = base_name + ".json"
         if os.path.exists(file_path):
             return f"Please don't cover existing file {file_path}."
-        
-        next_player_for_curr_state = self.get_next_player_for_curr_state(curr_turn)
             
         file_dir = os.path.dirname(file_path)  # 提取目录部分
         try:
@@ -132,7 +120,7 @@ class Game(ABC):
             error_message = f"Failed to create directory '{file_dir}': {str(e)}"
             return error_message
         
-        state = {"next_player_for_curr_state": next_player_for_curr_state,
+        state = {"curr_turn": curr_turn,
                  "chessboard": self.chessboard.board}
         with open(file_path, 'w') as f:
             json.dump(state, f)
@@ -158,16 +146,17 @@ class Game(ABC):
         if file_path not in self.states_stored:
             return f"File {file_path} isn't a valid state for current game."
         
-        if (self.turn_taken and self.get_next_player_for_curr_state(curr_turn) == state["next_player_for_curr_state"]) or (not self.turn_taken and curr_turn == state["next_player_for_curr_state"]):
+        if curr_turn == state["curr_turn"]:
             self.chessboard.set_board(state["chessboard"])
             return f"Successfully loaded history state from {file_path}."
         else:
             return "Player of the state to be loaded dosen't match current state."
         
     @abstractmethod
-    def next_turn_allowed(self) -> tuple[bool, str]:
+    def next_turn_allowed(self, end_turn: bool=False) -> tuple[bool, str]:
         """
         是否可以进行下一轮。
+        :param end_turn: 是否是玩家主动结束回合
         """
         pass
     
@@ -190,7 +179,7 @@ class GomokuGame(Game):
         # 游戏规则，指导玩家下棋
         self.hints = (
             "Gomoku Rules: Players alternate placing stones; Black starts. Form a row of 5 stones to win. Stones must stay within the board. "
-            "Buttons: Admit Defeat, Restart, Undo, Store State, Load State, End Turn (or press ENTER)."
+            "Buttons: Admit Defeat, Restart, Undo, Store State, Load State."
         )
   
     def capture(self):
@@ -211,7 +200,7 @@ class GomokuGame(Game):
         """
         pass
     
-    def next_turn_allowed(self):
+    def next_turn_allowed(self, end_turn=False):
         """
         是否可以进行下一轮。
         """
@@ -236,7 +225,7 @@ class GoGame(Game):
         self.hints = (
             "Go Rules: Players alternate placing stones; Black starts. Control territory by surrounding empty spaces and capturing opponent's stones. "
             "Stones with no liberties are captured. The game ends when both players skip or no moves are possible. Scoring: Black gives White 3.25 points (komi). "
-            "Buttons: Admit Defeat, Restart, Undo, Skip, Store State, Load State, Capture, End Turn (or press ENTER)."
+            "Buttons: Admit Defeat, Restart, Undo, Store State, Load State, Capture, End Turn (or press ENTER)."
         )
 
     def capture(self):
@@ -277,18 +266,15 @@ class GoGame(Game):
         """
         self.turn_taken = taken
         
-    def next_turn_allowed(self):
+    def next_turn_allowed(self, end_turn=False):
         """
         是否可以进行下一轮。
         """
-        if not self.turn_taken:
-            return False, "Set chess first."
-        
-        if self.curr_move is None:  # skip case（虚着）
+        if not self.turn_taken:  # skip case（虚着）
             return True, None
         
         curr_capture = self.rule.get_curr_capture(self.curr_move[0], self.curr_move[1], self.chessboard)  # 获取可以提的子
         if curr_capture != []:
-            return False, "Capture first."
+            return False, "Capture first." if end_turn else None
         else:
             return True, None

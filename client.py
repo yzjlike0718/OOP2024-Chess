@@ -97,11 +97,12 @@ class Client():
                 self.UI_platform.show_winner(None)
                 self.play_game()
                 
-    def next_turn(self):
+    def next_turn(self, end_turn: bool=False):
         """
         玩家请求结束当前回合
+        :param end_turn: 是否是玩家主动结束回合
         """
-        next_turn_allowed, message = self.game.next_turn_allowed()
+        next_turn_allowed, message = self.game.next_turn_allowed(end_turn)
         if next_turn_allowed:  # 当前玩家已经落子（或围棋玩家选择 skip）
             self.check_finish()  # 检查是否终局
             self.new_turn()  # 切换到下一轮
@@ -139,9 +140,10 @@ class Client():
                         self.caretaker.save_memento(self.game.create_memento())
                         self.game.make_move(row=row, col=col, curr_turn=self.turn)
                         self.game.set_skip_last_turn(self.turn, False)  # 围棋中取消跳过落子标记
-                        continue
-                    self.UI_platform.pop_message(message)
-                    if self.UI_platform.admit_defeat(mouse_pos=event_val):
+                        if self.game.next_turn_allowed():
+                            self.next_turn()
+                            continue
+                    elif self.UI_platform.admit_defeat(mouse_pos=event_val):
                         # 玩家认输
                         self.winner = "WHITE" if self.turn == "BLACK" else "BLACK"
                         self.UI_platform.show_winner(self.winner)
@@ -153,23 +155,19 @@ class Client():
                         # 玩家请求悔棋
                         message = self.undo_move()
                         self.UI_platform.pop_message(message)
-                    elif self.UI_platform.skip(mouse_pos=event_val):
-                        # 围棋玩家选择跳过落子
-                        self.game.set_skip_last_turn(self.turn, True)
-                        self.game.set_turn_taken(True)
-                        if self.game.allow_winner_check():  # 检查是否满足胜利条件
-                            self.winner = self.game.rule.check_win(self.game.get_state())
-                            assert self.winner is not None
-                            self.UI_platform.show_winner(self.winner)
-                            self.play_game()
-                        self.next_turn()
                     elif self.UI_platform.store_state(mouse_pos=event_val):
                         # 玩家请求存储当前局面
+                        if self.game.get_turn_taken():  # 玩家只能在自己行棋之前存储局面
+                            self.UI_platform.pop_message("You can only Store State before taking move.")
+                            continue
                         file_dir = self.UI_platform.select_file(is_store=True)
                         message = self.game.store_state(file_dir, self.turn)
                         self.UI_platform.pop_message(message)
                     elif self.UI_platform.load_state(mouse_pos=event_val):
                         # 玩家请求加载历史局面
+                        if self.game.get_turn_taken():  # 玩家只能在自己行棋之前加载历史局面
+                            self.UI_platform.pop_message("You can only Load State before taking move.")
+                            continue
                         file_dir = self.UI_platform.select_file(is_store=False)
                         message = self.game.load_state(file_dir, self.turn)
                         self.UI_platform.pop_message(message)
@@ -178,12 +176,22 @@ class Client():
                         message = self.game.capture()
                         self.UI_platform.pop_message(message)
                     elif self.UI_platform.end_turn(mouse_pos=event_val):
-                        self.next_turn()
+                        # 只有围棋玩家有该按键
+                        if self.game.get_turn_taken() == False:  # 玩家执行虚着
+                            self.game.set_skip_last_turn(self.turn, True)
+                            if self.game.allow_winner_check():  # 检查是否满足胜利条件
+                                self.winner = self.game.rule.check_win(self.game.get_state())
+                                assert self.winner is not None
+                                self.UI_platform.show_winner(self.winner)
+                                self.play_game()
+                        self.next_turn(end_turn=True)
                     elif self.UI_platform.view_hints(mouse_pos=event_val):
                         self.UI_platform.pop_message(self.game.get_hints(), text_color=BLACK)
+                    else:  # 没有合法落子且没有点击其它按键
+                        self.UI_platform.pop_message(message)
                 elif event_type == pygame.KEYDOWN:
                     if event_val == pygame.K_RETURN:
-                        self.next_turn()
+                        self.next_turn(end_turn=True)
             # 每轮更新 UI 显示棋盘状态
             self.UI_platform.display_chessboard(self.game.get_state(), self.turn)
             

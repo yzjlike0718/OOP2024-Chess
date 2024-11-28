@@ -28,7 +28,6 @@ class UITemplate():
         self.button_admit_defeat = None  # "认输" 按钮
         self.button_restart = None  # "重新开始" 按钮
         self.button_undo = None  # "悔棋" 按钮
-        self.button_skip = None  # "跳过" 按钮
         self.button_store_state = None  # "存储局面" 按钮
         self.button_load_state = None  # "加载局面" 按钮
         self.button_capture = None  # "提子" 按钮
@@ -238,14 +237,6 @@ class UITemplate():
         """
         return self.button_undo.collidepoint(mouse_pos)
 
-    def skip(self, mouse_pos: tuple[int, int]) -> bool:
-        """
-        判断是否点击了“跳过”按钮，并打印跳过的提示。
-        :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
-        :return bool: 如果鼠标位置与“跳过”按钮发生碰撞，则返回 True；否则返回 False。
-        """
-        return self.button_skip.collidepoint(mouse_pos)
-    
     def store_state(self, mouse_pos: tuple[int, int]) -> bool:
         """
         判断是否点击了“存储局面”按钮，并打印跳过的提示。
@@ -278,6 +269,8 @@ class UITemplate():
         :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
         :return bool: 如果鼠标位置与“结束回合”按钮发生碰撞，则返回 True；否则返回 False。
         """
+        if self.button_end_turn is None:
+            return False
         return self.button_end_turn.collidepoint(mouse_pos)
     
     def view_hints(self, mouse_pos: tuple[int, int]) -> bool:
@@ -568,33 +561,17 @@ class GomokuUI(UITemplate):
             GRID_SIZE + 5 * BUTTON_INTERVAL, 
             update=False
         )
-                
-        # 绘制 "结束回合" 按钮
-        self.button_end_turn = self.draw_button(
-            "End Turn", 
-            COMMON_BUTTON_LEFT, 
-            GRID_SIZE + 6 * BUTTON_INTERVAL, 
-            update=False
-        )
         
         # 绘制 "提示" 按钮
         self.button_hint = self.draw_button(
             "View Hints", 
             COMMON_BUTTON_LEFT, 
-            GRID_SIZE + 7 * BUTTON_INTERVAL, 
+            GRID_SIZE + 6 * BUTTON_INTERVAL, 
             update=False
         )
                 
         # 更新屏幕显示
         pygame.display.flip()
-        
-    def skip(self, mouse_pos: tuple[int, int]):
-        """
-        检查是否点击了 "跳过" 按钮（五子棋没有此功能，始终返回 False）。
-        :param mouse_pos: 鼠标点击位置
-        :return: False（五子棋无跳过操作）
-        """
-        return False
         
 # 具体产品（围棋UI）
 class GoUI(UITemplate):
@@ -645,19 +622,11 @@ class GoUI(UITemplate):
             update=False
         )
         
-        # 绘制 "跳过" 按钮
-        self.button_skip = self.draw_button(
-            "Skip",
-            COMMON_BUTTON_LEFT,
-            GRID_SIZE + 4 * BUTTON_INTERVAL,
-            update=False
-        )
-        
         # 绘制 "存储局面" 按钮
         self.button_store_state = self.draw_button(
             "Store State", 
             COMMON_BUTTON_LEFT, 
-            GRID_SIZE + 5 * BUTTON_INTERVAL, 
+            GRID_SIZE + 4 * BUTTON_INTERVAL, 
             update=False
         )
         
@@ -665,7 +634,7 @@ class GoUI(UITemplate):
         self.button_load_state = self.draw_button(
             "Load State", 
             COMMON_BUTTON_LEFT, 
-            GRID_SIZE + 6 * BUTTON_INTERVAL, 
+            GRID_SIZE + 5 * BUTTON_INTERVAL, 
             update=False
         )
         
@@ -673,7 +642,7 @@ class GoUI(UITemplate):
         self.button_capture = self.draw_button(
             "Capture", 
             COMMON_BUTTON_LEFT, 
-            GRID_SIZE + 7 * BUTTON_INTERVAL, 
+            GRID_SIZE + 6 * BUTTON_INTERVAL, 
             update=False
         )
         
@@ -681,7 +650,7 @@ class GoUI(UITemplate):
         self.button_end_turn = self.draw_button(
             "End Turn", 
             COMMON_BUTTON_LEFT, 
-            GRID_SIZE + 8 * BUTTON_INTERVAL, 
+            GRID_SIZE + 7 * BUTTON_INTERVAL, 
             update=False
         )
         
@@ -689,7 +658,7 @@ class GoUI(UITemplate):
         self.button_hint = self.draw_button(
             "View Hints", 
             COMMON_BUTTON_LEFT, 
-            GRID_SIZE + 9 * BUTTON_INTERVAL, 
+            GRID_SIZE + 8 * BUTTON_INTERVAL, 
             update=False
         )
                 
