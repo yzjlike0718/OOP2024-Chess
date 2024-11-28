@@ -41,6 +41,7 @@ class UITemplate():
         self.button_hint = None  # "提示" 按钮
         
         self.AI_available = False  # 是否提供 AI 玩家
+        self.valid_chessboard_size: list[str] = None  # 可选的棋盘大小
         
     def detect_event(self):
         """
@@ -108,6 +109,7 @@ class UITemplate():
         while True:
             button_gomoku = self.draw_button("Gomoku", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, BUTTON_TOP, BUTTON_WIDTH, BUTTON_HEIGHT)
             button_go = self.draw_button("Go", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, BUTTON_TOP + BUTTON_INTERVAL, BUTTON_WIDTH, BUTTON_HEIGHT)
+            button_othello = self.draw_button("Othello", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, BUTTON_TOP + 2 * BUTTON_INTERVAL, BUTTON_WIDTH, BUTTON_HEIGHT)
             pygame.display.flip()
             
             event = self.detect_event()
@@ -119,6 +121,8 @@ class UITemplate():
                         return "Gomoku"
                     elif button_go.collidepoint(mouse_pos):
                         return "Go"
+                    elif button_othello.collidepoint(mouse_pos):
+                        return "Othello"
                     
     def choose_board_size(self):
         """
@@ -127,7 +131,6 @@ class UITemplate():
         """
         button_choose_size = self.draw_button("Choose board size", SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, 150, bg_color=BLACK, text_color=WHITE)
         display_options = False  # 是否显示选项
-        size_options = [str(i) for i in range(8, 20)]  # 棋盘大小选项
         
         while True:
             self.screen.fill(BLACK)
@@ -136,7 +139,7 @@ class UITemplate():
             
             if display_options:
                 # 绘制大小选项按钮
-                for index, option in enumerate(size_options):
+                for index, option in enumerate(self.valid_chessboard_size):
                     self.draw_button(option, SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, 220 + (index * (OPTION_HEIGHT + 5)), height=OPTION_HEIGHT, update=False)
             
             pygame.display.flip()
@@ -151,7 +154,7 @@ class UITemplate():
                         display_options = not display_options  # 切换选项显示状态
                         
                     if display_options:
-                        for index, option in enumerate(size_options):
+                        for index, option in enumerate(self.valid_chessboard_size):
                             button_option = self.draw_button(option, SCREEN_WIDTH // 2 - BUTTON_WIDTH // 2, 220 + (index * (OPTION_HEIGHT + 5)), update=False)
                             if button_option.collidepoint(mouse_pos):
                                 return int(option)
@@ -667,6 +670,7 @@ class GomokuUI(UITemplate):
     def __init__(self) -> None:
         super().__init__()
         self.AI_available = True
+        self.valid_chessboard_size = [str(i) for i in range(8, 20)]
         
     def display_right_sidebar(self, turn):
         """
@@ -744,6 +748,7 @@ class GoUI(UITemplate):
         初始化围棋 UI 类，调用父类的初始化方法。
         """
         super().__init__()
+        self.valid_chessboard_size = [str(i) for i in range(8, 20)]
         
     def display_right_sidebar(self, turn):
         """
@@ -824,3 +829,79 @@ class GoUI(UITemplate):
                 
         # 更新屏幕显示
         pygame.display.flip()
+
+# 具体产品（黑白棋UI）
+class OthelloUI(UITemplate):
+    """
+    黑白棋用户界面类，继承自 UITemplate。
+    提供黑白棋特有的右侧操作面板布局。
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self.AI_available = True
+        self.valid_chessboard_size = ['8']
+        
+    def display_right_sidebar(self, turn):
+        """
+        绘制右侧操作面板，包含当前玩家的轮次信息和操作按钮。
+        :param turn: 当前玩家的颜色 ("BLACK" 或 "WHITE")
+        """
+        # 显示当前玩家轮次信息
+        message_turn = self.display_message(
+            f"{turn}'s Turn.", 
+            left=COMMON_BUTTON_LEFT, 
+            top=GRID_SIZE, 
+            color=WHITE if turn == "WHITE" else BLACK
+        )
+                    
+        # 绘制 "认输" 按钮
+        self.button_admit_defeat = self.draw_button(
+            "Admit Defeat", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + BUTTON_INTERVAL, 
+            update=False
+        )
+        
+        # 绘制 "重新开始" 按钮
+        self.button_restart = self.draw_button(
+            "Restart", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 2 * BUTTON_INTERVAL, 
+            update=False
+        )
+        
+        # 绘制 "悔棋" 按钮
+        self.button_undo = self.draw_button(
+            "Undo", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 3 * BUTTON_INTERVAL, 
+            update=False
+        )
+        
+        # 绘制 "存储局面" 按钮
+        self.button_store_state = self.draw_button(
+            "Store State", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 4 * BUTTON_INTERVAL, 
+            update=False
+        )
+        
+        # 绘制 "加载局面" 按钮
+        self.button_load_state = self.draw_button(
+            "Load State", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 5 * BUTTON_INTERVAL, 
+            update=False
+        )
+        
+        # 绘制 "提示" 按钮
+        self.button_hint = self.draw_button(
+            "View Hints", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 6 * BUTTON_INTERVAL, 
+            update=False
+        )
+                
+        # 更新屏幕显示
+        pygame.display.flip()
+        

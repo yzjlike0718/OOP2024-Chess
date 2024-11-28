@@ -38,4 +38,16 @@ class GoUIFactory(UIFactory):
         :return: GoUI 对象
         """
         return GoUI()
+
+# 具体工厂（黑白棋 UI）
+class OthelloUIFactory(UIFactory):
+    """
+    黑白棋 UI 工厂，负责创建黑白棋的用户界面。
+    """
+    def createUI(self):
+        """
+        创建围棋的具体 UI 对象。
+        :return: OthelloUI 对象
+        """
+        return OthelloUI()
     

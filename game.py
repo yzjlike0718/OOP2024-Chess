@@ -31,22 +31,23 @@ class Game(ABC):
         恢复备忘录中的棋盘状态。
         :param memento: 保存棋盘状态的 Memento 对象
         """
-        self.chessboard = copy.deepcopy(memento.get_state())
+        self.chessboard = copy.deepcopy(memento.get_chessboard())
     
-    def get_state(self):
+    def get_chessboard(self):
         """
         获取当前棋盘状态。
         :return: 当前棋盘状态（Chessboard 对象）
         """
         return self.chessboard
     
-    def set_state(self, state: Chessboard):
+    def set_chessboard(self, board_size: int):
         """
         设置棋盘状态。
         :param state: 要设置的棋盘状态（Chessboard 对象）
         """
-        self.chessboard = copy.deepcopy(state)
+        self.chessboard = Chessboard(board_size)
     
+    @ abstractmethod
     def make_move(self, row: int, col: int, curr_turn: str):
         """
         执行玩家的落子操作。
@@ -54,9 +55,7 @@ class Game(ABC):
         :param col: 落子列坐标
         :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
         """
-        self.chessboard.set_chess(row, col, curr_turn)
-        self.set_turn_taken(True)
-        self.curr_move = (row, col)
+        pass
         
     def reset_curr_move(self):
         self.curr_move = None
@@ -69,7 +68,7 @@ class Game(ABC):
         pass
     
     @abstractmethod
-    def allow_winner_check(self) -> bool:
+    def allow_winner_check(self, curr_turn: str=None) -> bool:
         """
         判断是否允许进行胜利条件检查。
         :return: 是否允许检查（布尔值）
@@ -165,6 +164,17 @@ class Game(ABC):
         获得当前游戏的提示。
         """
         return self.hints
+    
+    def make_move(self, row: int, col: int, curr_turn: str):
+        """
+        执行玩家的落子操作。
+        :param row: 落子行坐标
+        :param col: 落子列坐标
+        :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
+        """
+        self.chessboard.set_chess(row, col, curr_turn)
+        self.set_turn_taken(True)
+        self.curr_move = (row, col)
 
 # 具体产品（五子棋）
 class GomokuGame(Game):
@@ -185,7 +195,7 @@ class GomokuGame(Game):
     def capture(self):
         pass
 
-    def allow_winner_check(self):
+    def allow_winner_check(self, curr_turn):
         """
         判断是否允许进行胜利条件检查（五子棋始终允许检查）。
         :return: 是否允许检查（布尔值）
@@ -208,6 +218,17 @@ class GomokuGame(Game):
             return True, None
         else:
             return False, "Set chess first."
+        
+    def make_move(self, row: int, col: int, curr_turn: str):
+        """
+        执行玩家的落子操作。
+        :param row: 落子行坐标
+        :param col: 落子列坐标
+        :param curr_turn: 当前玩家的颜色（"BLACK" 或 "WHITE"）
+        """
+        self.chessboard.set_chess(row, col, curr_turn)
+        self.set_turn_taken(True)
+        self.curr_move = (row, col)
     
 # 具体产品（围棋）
 class GoGame(Game):
@@ -241,7 +262,7 @@ class GoGame(Game):
         else:
             return "Please set chess first."
         
-    def allow_winner_check(self):
+    def allow_winner_check(self, curr_turn):
         """
         判断是否允许进行胜利条件检查（围棋需要双方连续跳过回合）。
         :return: 是否允许检查（布尔值）
@@ -278,3 +299,76 @@ class GoGame(Game):
             return False, "Capture first." if end_turn else None
         else:
             return True, None
+
+# 具体产品（黑白棋）
+class OthelloGame(Game):
+    """
+    黑白棋游戏类，继承自 Game。
+    """
+
+    def __init__(self) -> None:
+        """
+        初始化黑白棋游戏。
+        """
+        super().__init__()
+        self.rule: OthelloRule = OthelloRule()
+        self.hints = (
+            "Othello Rules: Players alternate placing pieces; Black starts. Flank opponent's pieces to flip them. "
+            "Game ends when neither player can move or the board is full. The player with the most pieces wins."
+        )
+        
+    def set_chessboard(self, board_size: int, is_initialization: bool=False):
+        """
+        设置棋盘状态。
+        初始化棋盘状态，设置中心棋子。
+        :param state: 要设置的棋盘状态（Chessboard 对象）
+        :param is_initialization: 
+        """
+        self.chessboard = Chessboard(board_size)
+        mid = self.chessboard.get_size() // 2
+        self.chessboard.set_chess(mid - 1, mid - 1, "WHITE")
+        self.chessboard.set_chess(mid, mid, "WHITE")
+        self.chessboard.set_chess(mid - 1, mid, "BLACK")
+        self.chessboard.set_chess(mid, mid - 1, "BLACK")
+
+    def capture(self):
+        """
+        黑白棋不需要实现提子逻辑。
+        """
+        pass
+
+    def allow_winner_check(self, curr_turn: str) -> bool:
+        """
+        黑白棋在棋盘填满或者双方都无合法棋步可下时系统判断胜负。
+        :return: 是否允许检查（布尔值）
+        """
+        return not self.rule.has_valid_moves(self.chessboard, curr_turn) or all(element is not None for row in self.chessboard.board for element in row)
+    
+    def set_skip_last_turn(self, turn, skip):
+        """
+        设置当前玩家是否跳过上一次回合（五子棋不需要此逻辑）。
+        :param turn: 玩家颜色（"BLACK" 或 "WHITE"）
+        :param skip: 是否跳过（布尔值）
+        """
+        pass
+
+    def next_turn_allowed(self, end_turn=False):
+        """
+        是否可以进行下一轮。
+        """
+        if self.turn_taken:
+            return True, None
+        else:
+            return False, "Set chess first."
+
+    def make_move(self, row: int, col: int, curr_turn: str):
+        """
+        执行玩家的落子操作并翻转棋子。
+        :param row: 行坐标
+        :param col: 列坐标
+        :param curr_turn: 当前玩家颜色（"BLACK" 或 "WHITE"）
+        """
+        flippable = self.rule.get_flippable_chess(row, col, self.chessboard, curr_turn)
+        self.chessboard.set_chess(row, col, curr_turn)
+        self.rule.flip_chess(flippable, self.chessboard, curr_turn)
+        self.set_turn_taken(True)

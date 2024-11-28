@@ -313,4 +313,107 @@ class GoRule(GameRule):
         :return: 是否为平局（布尔值）
         """
         pass  # TODO: 围棋有平局吗？
+
+# 具体策略类：黑白棋规则
+class OthelloRule(GameRule):
+    """
+    黑白棋规则类，定义落子合法性、翻转逻辑、胜负判断等。
+    """
+
+    def is_valid_move(self, row, col, board, curr_turn, turn_taken):
+        """
+        检查落子是否合法。
+        :param row: 落子行坐标
+        :param col: 落子列坐标
+        :param board: 棋盘对象
+        :param curr_turn: 当前玩家颜色（"BLACK" 或 "WHITE"）
+        :param turn_taken: 当前回合是否已落子
+        :return: (是否有效, 错误信息)
+        """
+        if not self.is_within_board(row, col, board):
+            return False, "[Invalid move] Out of board."
+        if board.get_chess(row, col) is not None:
+            return False, "[Invalid move] Cell is occupied."
+        if not self.get_flippable_chess(row, col, board, curr_turn):
+            return False, "[Invalid move] Cannot flip opponent chess."
+        return True, None
+
+    def is_within_board(self, row, col, board):
+        """
+        检查位置是否在棋盘范围内。
+        """
+        return 0 <= row < board.get_size() and 0 <= col < board.get_size()
+
+    def get_flippable_chess(self, row, col, board, curr_turn):
+        """
+        获取落子后需要翻转的棋子。
+        :param row: 落子行坐标
+        :param col: 落子列坐标
+        :param board: 棋盘对象
+        :param curr_turn: 当前玩家颜色
+        :return: 需要翻转的棋子位置列表
+        """
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]
+        opponent = "BLACK" if curr_turn == "WHITE" else "WHITE"
+        flippable = []
+
+        for d_row, d_col in directions:
+            temp = []
+            r, c = row + d_row, col + d_col
+            while self.is_within_board(r, c, board) and board.get_chess(r, c) == opponent:
+                temp.append((r, c))
+                r += d_row
+                c += d_col
+            if self.is_within_board(r, c, board) and board.get_chess(r, c) == curr_turn:
+                flippable.extend(temp)
+
+        return flippable
+
+    def flip_chess(self, positions, board, curr_turn):
+        """
+        翻转指定位置的棋子。
+        :param positions: 需要翻转的棋子位置列表
+        :param board: 棋盘对象
+        :param curr_turn: 当前玩家颜色
+        """
+        for row, col in positions:
+            board.set_chess(row, col, curr_turn)
+
+    def check_win(self, board):
+        """
+        检查是否分出胜负。
+        :param board: 棋盘对象
+        :return: 胜者颜色或 None
+        """
+        black_count = sum(board.get_chess(r, c) == "BLACK" for r in range(board.get_size()) for c in range(board.get_size()))
+        white_count = sum(board.get_chess(r, c) == "WHITE" for r in range(board.get_size()) for c in range(board.get_size()))
+        
+        if black_count > white_count:
+            return "BLACK"
+        elif white_count > black_count:
+            return "WHITE"
+        return None
+
+    def check_draw(self, board):
+        """
+        检查是否平局。
+        :param board: 棋盘对象
+        :return: 是否平局
+        """
+        black_count = sum(board.get_chess(r, c) == "BLACK" for r in range(board.get_size()) for c in range(board.get_size()))
+        white_count = sum(board.get_chess(r, c) == "WHITE" for r in range(board.get_size()) for c in range(board.get_size()))
+        return black_count == white_count
+
+    def has_valid_moves(self, board, curr_turn):
+        """
+        检查当前玩家是否有合法棋步。
+        :param board: 棋盘对象
+        :param curr_turn: 当前玩家颜色
+        :return: 是否有合法棋步
+        """
+        for row in range(board.get_size()):
+            for col in range(board.get_size()):
+                if board.get_chess(row, col) is None and self.get_flippable_chess(row, col, board, curr_turn):
+                    return True
+        return False
         

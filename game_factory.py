@@ -28,3 +28,12 @@ class GoFactory(GameFactory):
         :return: GoGame 对象
         """
         return GoGame()
+    
+# 具体工厂类（黑白棋），负责创建黑白棋游戏实例
+class OthelloFactory(GameFactory):
+    def createGame(self):
+        """
+        创建并返回围棋游戏实例。
+        :return: OthelloGame 对象
+        """
+        return OthelloGame()

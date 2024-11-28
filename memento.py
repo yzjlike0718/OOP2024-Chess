@@ -10,14 +10,14 @@ class Memento:
         """
         self.state: Chessboard = copy.deepcopy(state)  # 深拷贝棋盘状态
         
-    def get_state(self) -> Chessboard:
+    def get_chessboard(self) -> Chessboard:
         """
         获取备忘录中存储的棋盘状态。
         :return: 保存的棋盘状态（Chessboard 对象）
         """
         return self.state
     
-    def set_state(self, state: Chessboard):
+    def set_chessboard(self, state: Chessboard):
         """
         更新备忘录中存储的棋盘状态。
         :param state: 新的棋盘状态（Chessboard 对象）
