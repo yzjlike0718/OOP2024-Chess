@@ -55,6 +55,15 @@ class GameRule(ABC):
         """
         board.set_chess(row, col, curr_turn)
 
+    @abstractmethod
+    def has_valid_moves(self, board: Chessboard, curr_turn: str):
+        """
+        检查当前玩家是否有合法棋步。
+        :param board: 棋盘对象
+        :param curr_turn: 当前玩家颜色
+        :return: 是否有合法棋步
+        """
+        
 # 具体策略类：五子棋规则
 class GomokuRule(GameRule):
     def is_valid_move(self, row, col, board, curr_turn, turn_taken):
@@ -141,6 +150,19 @@ class GomokuRule(GameRule):
         """
         return all(board.get_chess(row, col) is not None for row in range(board.get_size()) for col in range(board.get_size()))
 
+    def has_valid_moves(self, board, curr_turn):
+        """
+        检查当前玩家是否有合法棋步。
+        :param board: 棋盘对象
+        :param curr_turn: 当前玩家颜色
+        :return: 是否有合法棋步
+        """
+        for row in range(board.get_size()):
+            for col in range(board.get_size()):
+                if self.is_valid_move(row, col, board, curr_turn, False):
+                    return True
+        return False
+    
 # 具体策略类：围棋规则
 class GoRule(GameRule):
     def get_territory(self, row: int, col: int, board: Chessboard) -> list[(int, int)]:
@@ -314,6 +336,19 @@ class GoRule(GameRule):
         """
         pass  # TODO: 围棋有平局吗？
 
+    def has_valid_moves(self, board, curr_turn):
+        """
+        检查当前玩家是否有合法棋步。
+        :param board: 棋盘对象
+        :param curr_turn: 当前玩家颜色
+        :return: 是否有合法棋步
+        """
+        for row in range(board.get_size()):
+            for col in range(board.get_size()):
+                if self.is_valid_move(row, col, board, curr_turn, False):
+                    return True
+        return False
+    
 # 具体策略类：黑白棋规则
 class OthelloRule(GameRule):
     """
@@ -413,7 +448,7 @@ class OthelloRule(GameRule):
         """
         for row in range(board.get_size()):
             for col in range(board.get_size()):
-                if board.get_chess(row, col) is None and self.get_flippable_chess(row, col, board, curr_turn):
+                if self.is_valid_move(row, col, board, curr_turn, False):
                     return True
         return False
         

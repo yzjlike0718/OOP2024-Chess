@@ -188,7 +188,6 @@ class GomokuGame(Game):
         """
         super().__init__()
         self.rule = GomokuRule()  # 五子棋规则
-        self.chessboard: Chessboard = None  # 棋盘对象
         
         # 游戏规则，指导玩家下棋
         self.hints = (
@@ -242,7 +241,6 @@ class GoGame(Game):
         """
         super().__init__()
         self.rule: GoRule = GoRule()  # 围棋规则
-        self.chessboard: Chessboard = None  # 棋盘对象
         self.black_skip_last_turn: bool = False  # 黑棋是否跳过上一回合
         self.white_skip_last_turn: bool = False  # 白棋是否跳过上一回合
         
@@ -316,6 +314,8 @@ class OthelloGame(Game):
         """
         super().__init__()
         self.rule: OthelloRule = OthelloRule()
+        self.black_skip_last_turn: bool = False  # 黑棋是否跳过上一回合
+        self.white_skip_last_turn: bool = False  # 白棋是否跳过上一回合
         self.hints = (
             "Othello Rules: Players alternate placing pieces; Black starts. Flank opponent's pieces to flip them. "
             "Game ends when neither player can move or the board is full. The player with the most pieces wins."
@@ -350,11 +350,14 @@ class OthelloGame(Game):
     
     def set_skip_last_turn(self, turn, skip):
         """
-        设置当前玩家是否跳过上一次回合（五子棋不需要此逻辑）。
+        设置当前玩家是否跳过上一次回合。
         :param turn: 玩家颜色（"BLACK" 或 "WHITE"）
         :param skip: 是否跳过（布尔值）
         """
-        pass
+        if turn == "BLACK":
+            self.black_skip_last_turn = skip
+        elif turn == "WHITE":
+            self.white_skip_last_turn = skip
 
     def next_turn_allowed(self, end_turn=False):
         """

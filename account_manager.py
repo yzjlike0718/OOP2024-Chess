@@ -59,7 +59,7 @@ class RealAccountManager(AccountManager):
         """
         if username in self.accounts:
             return False, f"Username {username} already exists."
-        self.accounts[username] = {"password": password, "games": 0, "wins": 0, "loses": 0}
+        self.accounts[username] = {"password": password, "games": 0, "wins": 0}
         self._save_accounts()
         return True, f"Registration successful. Welcome, {username}!"
 

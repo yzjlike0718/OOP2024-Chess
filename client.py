@@ -185,6 +185,15 @@ class Client():
         while True:
             # 每轮更新 UI 显示棋盘状态
             self.UI_platform.display_chessboard(self.game.get_chessboard(), self.chess_color[self.turn], self.players[self.turn].name)
+            
+            # 没有合法步可以走
+            if not self.game.rule.has_valid_moves(self.game.chessboard, self.chess_color[self.turn]):
+                self.UI_platform.pop_message("No valid moves.")
+                self.game.set_skip_last_turn(self.chess_color[self.turn], True)
+                self.check_finish()
+                self.game.set_turn_taken(True)
+                self.next_turn()
+                
             if self.players[self.turn].is_AI:
                 time.sleep(1)
                 row, col = self.players[self.turn].calculate_move(self.game.chessboard)
