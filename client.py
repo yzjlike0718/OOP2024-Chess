@@ -167,10 +167,7 @@ class Client():
         :param board_size: 棋盘大小（可选）
         """
         # 初始化游戏状态
-        self.game_over = False
-        self.turn = 0
-        self.winner = None
-        self.allow_undo = True
+        self.__init__()
         self.choose_game(game_name)  # 选择游戏
         self.set_game()  # 创建游戏和 UI
         
