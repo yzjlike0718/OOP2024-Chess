@@ -39,17 +39,17 @@ class GomokuAILevel1(GomokuAI):
         :return: 随机合法落子的位置 (row, col)
         """
         size = chessboard.get_size()
-        legal_moves = []
+        valid_moves = []
 
         # 遍历棋盘，找到所有合法位置
         for row in range(size):
             for col in range(size):
-                if chessboard.get_chess(row, col) is None:
-                    legal_moves.append((row, col))
+                if self.rule.is_valid_move(row, col, chessboard, self.color, False)[0]:
+                    valid_moves.append((row, col))
 
         # 从合法位置中随机选择一个
-        if legal_moves:
-            return random.choice(legal_moves)
+        if valid_moves:
+            return random.choice(valid_moves)
         else:
             return None  # 无合法位置
 
@@ -100,8 +100,8 @@ class GomokuAILevel2(GomokuAI):
             :param col: 列坐标
             :return: 评分
             """
-            if chessboard.get_chess(row, col) is not None:
-                return -1  # 非法位置，跳过
+            if not self.rule.is_valid_move(row, col, chessboard, self.color, False)[0]:
+                return -100  # 非法位置，跳过
 
             score = 0
             for d_row, d_col in directions:
@@ -146,17 +146,17 @@ class OthelloAILevel1(OthelloAI):
         :return: 随机合法落子的位置 (row, col)
         """
         size = chessboard.get_size()
-        legal_moves = []
+        valid_moves = []
 
         # 遍历棋盘，找到所有合法位置
         for row in range(size):
             for col in range(size):
-                if chessboard.get_chess(row, col) is None:
-                    legal_moves.append((row, col))
+                if self.rule.is_valid_move(row, col, chessboard, self.color, False)[0]:
+                    valid_moves.append((row, col))
 
         # 从合法位置中随机选择一个
-        if legal_moves:
-            return random.choice(legal_moves)
+        if valid_moves:
+            return random.choice(valid_moves)
         else:
             return None  # 无合法位置
 
@@ -176,9 +176,7 @@ class OthelloAILevel2(OthelloAI):
         :return: 最优落子的位置 (row, col)
         """
         size = chessboard.get_size()
-        rule = OthelloRule()
-        opponent_color = "BLACK" if self.color == "WHITE" else "WHITE"
-        max_score = -float("inf")
+        max_score = -1
         best_move = None
 
         # 评分函数的参数
@@ -194,13 +192,13 @@ class OthelloAILevel2(OthelloAI):
             :param col: 列坐标
             :return: 评分
             """
-            if not rule.is_valid_move(row, col, chessboard, self.color, False)[0]:
-                return -float("inf")  # 非法位置
+            if not self.rule.is_valid_move(row, col, chessboard, self.color, False)[0]:
+                return -100  # 非法位置
 
             score = 0
 
             # 加分：翻转的棋子数量
-            flippable = rule.get_flippable_chess(row, col, chessboard, self.color)
+            flippable = self.rule.get_flippable_chess(row, col, chessboard, self.color)
             score += len(flippable)
 
             # 加分：角落位置
