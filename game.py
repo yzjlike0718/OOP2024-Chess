@@ -100,23 +100,25 @@ class Game(ABC):
         """
         return self.turn_taken
     
-    def store_state(self, file_dir, curr_turn):
+    def store_state(self, file_path, curr_turn):
         """
         存储当前局面和当前局面对应的下一个行棋方到指定文件。
-        :param file_dir: 指定文件。
+        :param file_path: 指定文件。
         :param curr_turn: 当前回合的玩家。
         :ruturn 成功/不成功
         """
-        base_name = os.path.splitext(file_dir)[0]
+        if file_path is None:
+            return
+        base_name = os.path.splitext(file_path)[0]
         file_path = base_name + ".json"
         if os.path.exists(file_path):
             return f"Please don't cover existing file {file_path}."
             
-        file_dir = os.path.dirname(file_path)  # 提取目录部分
+        file_path = os.path.dirname(file_path)  # 提取目录部分
         try:
-            os.makedirs(file_dir, exist_ok=True)
+            os.makedirs(file_path, exist_ok=True)
         except Exception as e:
-            error_message = f"Failed to create directory '{file_dir}': {str(e)}"
+            error_message = f"Failed to create directory '{file_path}': {str(e)}"
             return error_message
         
         state = {"curr_turn": curr_turn,
@@ -131,10 +133,12 @@ class Game(ABC):
     def load_state(self, file_path: str, curr_turn: str) -> str:
         """
         从指定文件加载历史局面和历史局面对应的下一个行棋方。
-        :param file_dir: 指定文件。
+        :param file_path: 指定文件。
         :param curr_turn: 当前回合的玩家。
         :ruturn 成功/不成功
         """
+        if file_path is None:
+            return
         try:
             with open(file_path, 'r') as f:
                 state = json.load(f)

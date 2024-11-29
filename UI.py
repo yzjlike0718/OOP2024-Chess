@@ -165,7 +165,7 @@ class UITemplate():
         :param winner: 获胜方的名称 ("BLACK" 或 "WHITE")，平局时为 None
         """
         self.screen.fill(BLACK)
-        self.display_message(f"{winner.upper()} win! Press ENTER to continue." if winner else "Draw!")  # 显示获胜信息
+        self.display_message(f"{winner} win! Press ENTER to continue." if winner else "Draw!")  # 显示获胜信息
 
         button_new_game = button_end_game = None  # 按钮初始化
         
@@ -191,7 +191,7 @@ class UITemplate():
                             exit()
             pygame.display.flip()
 
-    def display_chessboard(self, chessboard: Chessboard, turn: str):
+    def display_chessboard(self, chessboard: Chessboard, turn: str, player_name: str):
         """
         绘制棋盘和当前状态。
         :param chessboard: 当前的棋盘对象
@@ -215,7 +215,7 @@ class UITemplate():
                 elif curr_chess == "WHITE":
                     pygame.draw.circle(self.screen, WHITE, (GRID_SIZE * (col + 1), GRID_SIZE * (row + 1)), CHESS_RADIUS)
                     
-        self.display_right_sidebar(turn)
+        self.display_right_sidebar(turn, player_name)
 
     @ abstractmethod
     def display_right_sidebar(self):
@@ -594,7 +594,7 @@ class UITemplate():
 
                         # 点击取消按钮
                         if cancel_button_rect.collidepoint(rel_x, rel_y):
-                            running = False
+                            return
 
                         # 点击目录项
                         entry_items = os.listdir(current_dir) if os.path.isdir(current_dir) else []
@@ -672,14 +672,14 @@ class GomokuUI(UITemplate):
         self.AI_available = True
         self.valid_chessboard_size = [str(i) for i in range(8, 20)]
         
-    def display_right_sidebar(self, turn):
+    def display_right_sidebar(self, turn, player_name):
         """
         绘制右侧操作面板，包含当前玩家的轮次信息和操作按钮。
         :param turn: 当前玩家的颜色 ("BLACK" 或 "WHITE")
         """
         # 显示当前玩家轮次信息
         message_turn = self.display_message(
-            f"{turn}'s Turn.", 
+            f"{player_name}'s Turn.", 
             left=COMMON_BUTTON_LEFT, 
             top=GRID_SIZE, 
             color=WHITE if turn == "WHITE" else BLACK
@@ -750,14 +750,14 @@ class GoUI(UITemplate):
         super().__init__()
         self.valid_chessboard_size = [str(i) for i in range(8, 20)]
         
-    def display_right_sidebar(self, turn):
+    def display_right_sidebar(self, turn, player_name):
         """
         绘制右侧操作面板，包含当前玩家的轮次信息和操作按钮。
         :param turn: 当前玩家的颜色 ("BLACK" 或 "WHITE")
         """
         # 显示当前玩家轮次信息
         message_turn = self.display_message(
-            f"{turn}'s Turn.",
+            f"{player_name}'s Turn.",
             left=COMMON_BUTTON_LEFT,
             top=GRID_SIZE,
             color=WHITE if turn == "WHITE" else BLACK
@@ -841,14 +841,14 @@ class OthelloUI(UITemplate):
         self.AI_available = True
         self.valid_chessboard_size = ['8']
         
-    def display_right_sidebar(self, turn):
+    def display_right_sidebar(self, turn, player_name):
         """
         绘制右侧操作面板，包含当前玩家的轮次信息和操作按钮。
         :param turn: 当前玩家的颜色 ("BLACK" 或 "WHITE")
         """
         # 显示当前玩家轮次信息
         message_turn = self.display_message(
-            f"{turn}'s Turn.", 
+            f"{player_name}'s Turn.", 
             left=COMMON_BUTTON_LEFT, 
             top=GRID_SIZE, 
             color=WHITE if turn == "WHITE" else BLACK
