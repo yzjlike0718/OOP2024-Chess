@@ -107,9 +107,11 @@ class Client():
                     self.winner = self.players[0].name
                 else:
                     self.winner = self.players[1].name
+                self.update_account_info()
                 self.UI_platform.show_winner(self.winner)
                 self.play_game()
             elif self.game.rule.check_draw(self.game.get_chessboard()):  # 平局情况
+                self.update_account_info()
                 self.UI_platform.show_winner(None)
                 self.play_game()
                 
@@ -151,15 +153,29 @@ class Client():
                 is_valid = False
                 message = "The second player cannot be the same as the first."
             else:
-                is_valid, message = self.account_manager.login(username, password)
+                is_valid, message, game_history = self.account_manager.login(username, password)
         else:
             # 未登录用户注册
-            is_valid, message = self.account_manager.register(username, password)
+            is_valid, message, game_history = self.account_manager.register(username, password)
         self.UI_platform.pop_message(message)
         if not is_valid:
             return None
-        return Player(is_guest=False, is_AI=False, name=username, color=color)
+        if game_history is not None:
+            games, wins = game_history
+        return Player(is_guest=False, is_AI=False, name=username, color=color, games=games, wins=wins)
         
+    def update_account_info(self):
+        """
+        调用平台系统更新登录玩家的战绩信息
+        """
+        for player in self.players:
+            if player.is_AI or player.is_guest:
+                continue
+            player.games += 1
+            if self.winner == player.name:
+                player.wins += 1
+            self.account_manager.update_account_info(player=player)
+            
     def play_game(self, game_name: str=None, board_size: int=None):  # TODO: 考虑作为模板方法
         """
         开始游戏主循环。
@@ -184,7 +200,7 @@ class Client():
         
         while True:
             # 每轮更新 UI 显示棋盘状态
-            self.UI_platform.display_chessboard(self.game.get_chessboard(), self.chess_color[self.turn], self.players[self.turn].name)
+            self.UI_platform.display_chessboard(self.game.get_chessboard(), self.chess_color[self.turn], self.players[self.turn].name, self.players[self.turn].games, self.players[self.turn].wins)
             
             # 没有合法步可以走
             if not self.game.rule.has_valid_moves(self.game.chessboard, self.chess_color[self.turn]):

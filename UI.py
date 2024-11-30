@@ -191,7 +191,7 @@ class UITemplate():
                             exit()
             pygame.display.flip()
 
-    def display_chessboard(self, chessboard: Chessboard, turn: str, player_name: str):
+    def display_chessboard(self, chessboard: Chessboard, turn: str, player_name: str, games: int=None, wins: int=None):
         """
         绘制棋盘和当前状态。
         :param chessboard: 当前的棋盘对象
@@ -215,7 +215,7 @@ class UITemplate():
                 elif curr_chess == "WHITE":
                     pygame.draw.circle(self.screen, WHITE, (GRID_SIZE * (col + 1), GRID_SIZE * (row + 1)), CHESS_RADIUS)
                     
-        self.display_right_sidebar(turn, player_name)
+        self.display_right_sidebar(turn, player_name, games, wins)
 
     @ abstractmethod
     def display_right_sidebar(self):
@@ -671,7 +671,7 @@ class GomokuUI(UITemplate):
         self.AI_available = True
         self.valid_chessboard_size = [str(i) for i in range(8, 20)]
         
-    def display_right_sidebar(self, turn, player_name):
+    def display_right_sidebar(self, turn, player_name, games: int=None, wins: int=None):
         """
         绘制右侧操作面板，包含当前玩家的轮次信息和操作按钮。
         :param turn: 当前玩家的颜色 ("BLACK" 或 "WHITE")
@@ -683,6 +683,16 @@ class GomokuUI(UITemplate):
             top=GRID_SIZE, 
             color=WHITE if turn == "WHITE" else BLACK
         )
+        
+        # 显示当前玩家对战场次信息
+        if games is not None:
+            assert wins is not None
+            message_info = self.display_message(
+                f"games: {games}, wins: {wins}", 
+                left=COMMON_BUTTON_LEFT, 
+                top=1.8 * GRID_SIZE, 
+                color=WHITE if turn == "WHITE" else BLACK
+            )
                     
         # 绘制 "认输" 按钮
         self.button_admit_defeat = self.draw_button(
@@ -749,7 +759,7 @@ class GoUI(UITemplate):
         super().__init__()
         self.valid_chessboard_size = [str(i) for i in range(8, 20)]
         
-    def display_right_sidebar(self, turn, player_name):
+    def display_right_sidebar(self, turn, player_name, games: int=None, wins: int=None):
         """
         绘制右侧操作面板，包含当前玩家的轮次信息和操作按钮。
         :param turn: 当前玩家的颜色 ("BLACK" 或 "WHITE")
@@ -761,6 +771,16 @@ class GoUI(UITemplate):
             top=GRID_SIZE,
             color=WHITE if turn == "WHITE" else BLACK
         )
+        
+        # 显示当前玩家对战场次信息
+        if games is not None:
+            assert wins is not None
+            message_info = self.display_message(
+                f"games: {games}, wins: {wins}", 
+                left=COMMON_BUTTON_LEFT, 
+                top=1.8 * GRID_SIZE, 
+                color=WHITE if turn == "WHITE" else BLACK
+            )
                     
         # 绘制 "认输" 按钮
         self.button_admit_defeat = self.draw_button(
@@ -840,7 +860,7 @@ class OthelloUI(UITemplate):
         self.AI_available = True
         self.valid_chessboard_size = ['8']
         
-    def display_right_sidebar(self, turn, player_name):
+    def display_right_sidebar(self, turn, player_name, games: int=None, wins: int=None):
         """
         绘制右侧操作面板，包含当前玩家的轮次信息和操作按钮。
         :param turn: 当前玩家的颜色 ("BLACK" 或 "WHITE")
@@ -852,6 +872,16 @@ class OthelloUI(UITemplate):
             top=GRID_SIZE, 
             color=WHITE if turn == "WHITE" else BLACK
         )
+        
+        # 显示当前玩家对战场次信息
+        if games is not None:
+            assert wins is not None
+            message_info = self.display_message(
+                f"games: {games}, wins: {wins}", 
+                left=COMMON_BUTTON_LEFT, 
+                top=1.8 * GRID_SIZE, 
+                color=WHITE if turn == "WHITE" else BLACK
+            )
                     
         # 绘制 "认输" 按钮
         self.button_admit_defeat = self.draw_button(
