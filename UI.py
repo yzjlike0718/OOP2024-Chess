@@ -260,9 +260,8 @@ class UITemplate():
         ai_buttons = [
             pygame.Rect(50, 50, 200, 40),
             pygame.Rect(50, 100, 200, 40),
-            pygame.Rect(50, 150, 200, 40),
         ]
-        ai_texts = ["Level 1", "Level 2", "Level 3"]
+        ai_texts = ["Level 1", "Level 2"]
 
         running = True
         while running:

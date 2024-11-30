@@ -159,7 +159,7 @@ class GomokuRule(GameRule):
         """
         for row in range(board.get_size()):
             for col in range(board.get_size()):
-                if self.is_valid_move(row, col, board, curr_turn, False):
+                if self.is_valid_move(row, col, board, curr_turn, False)[0]:
                     return True
         return False
     
@@ -345,7 +345,7 @@ class GoRule(GameRule):
         """
         for row in range(board.get_size()):
             for col in range(board.get_size()):
-                if self.is_valid_move(row, col, board, curr_turn, False):
+                if self.is_valid_move(row, col, board, curr_turn, False)[0]:
                     return True
         return False
     
@@ -448,7 +448,7 @@ class OthelloRule(GameRule):
         """
         for row in range(board.get_size()):
             for col in range(board.get_size()):
-                if self.is_valid_move(row, col, board, curr_turn, False):
+                if self.is_valid_move(row, col, board, curr_turn, False)[0]:
                     return True
         return False
         
