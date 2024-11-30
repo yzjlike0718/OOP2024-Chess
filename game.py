@@ -100,7 +100,7 @@ class Game(ABC):
         """
         return self.turn_taken
     
-    def store_state(self, file_path, curr_turn):
+    def store_state(self, file_path, curr_turn, momento_list: list[Memento]):
         """
         存储当前局面和当前局面对应的下一个行棋方到指定文件。
         :param file_path: 指定文件。
@@ -114,15 +114,15 @@ class Game(ABC):
         if os.path.exists(file_path):
             return f"Please don't cover existing file {file_path}."
             
-        file_path = os.path.dirname(file_path)  # 提取目录部分
+        file_dir = os.path.dirname(file_path)  # 提取目录部分
         try:
-            os.makedirs(file_path, exist_ok=True)
+            os.makedirs(file_dir, exist_ok=True)
         except Exception as e:
-            error_message = f"Failed to create directory '{file_path}': {str(e)}"
+            error_message = f"Failed to create directory '{file_dir}': {str(e)}"
             return error_message
         
         state = {"curr_turn": curr_turn,
-                 "chessboard": self.chessboard.board}
+                 "chessboards": [momento.get_chessboard().board for momento in momento_list]}
         with open(file_path, 'w') as f:
             json.dump(state, f)
             
@@ -130,7 +130,7 @@ class Game(ABC):
         
         return f"Successfully stored current state to {file_path}."
     
-    def load_state(self, file_path: str, curr_turn: str) -> str:
+    def load_state(self, file_path: str, curr_turn: str, playback: bool):
         """
         从指定文件加载历史局面和历史局面对应的下一个行棋方。
         :param file_path: 指定文件。
@@ -138,22 +138,25 @@ class Game(ABC):
         :ruturn 成功/不成功
         """
         if file_path is None:
-            return
+            return False, f"Input a valid file path."
         try:
             with open(file_path, 'r') as f:
                 state = json.load(f)
         except Exception as e:
             error_message = f"Failed to load '{file_path}': {str(e)}"
-            return error_message
+            return False, error_message
         
         if file_path not in self.states_stored:
-            return f"File {file_path} isn't a valid state for current game."
+            return False, f"File {file_path} isn't a valid state for current game."
         
-        if curr_turn == state["curr_turn"]:
-            self.chessboard.set_board(state["chessboard"])
-            return f"Successfully loaded history state from {file_path}."
+        if playback == False:
+            if curr_turn == state["curr_turn"]:
+                self.chessboard.set_board(state["chessboards"][-1])
+                return True, f"Successfully loaded history state from {file_path}."
+            else:
+                return False, "Player of the state to be loaded dosen't match current state."
         else:
-            return "Player of the state to be loaded dosen't match current state."
+            return True, state["chessboards"]
         
     @abstractmethod
     def next_turn_allowed(self, end_turn: bool=False) -> tuple[bool, str]:

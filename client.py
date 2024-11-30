@@ -44,6 +44,7 @@ class Client():
         if board_size is None:
             board_size = self.UI_platform.choose_board_size()
         self.game.set_chessboard(board_size)  # 设置棋盘为指定大小
+        self.caretaker.save_memento(self.game.create_memento())  # 存储初始棋盘
     
     def set_game(self):
         """
@@ -70,8 +71,8 @@ class Client():
         :param row: 落子的行坐标
         :param col: 落子的列坐标
         """
-        self.caretaker.save_memento(self.game.create_memento())  # 保存当前状态
         self.game.make_move(row=row, col=col, curr_turn=self.chess_color[self.turn])  # 在棋盘上落子
+        self.caretaker.save_memento(self.game.create_memento())  # 保存当前状态
 
     def undo_move(self) -> str:
         """
@@ -229,8 +230,7 @@ class Client():
                     is_valid_move, message = self.game.rule.is_valid_move(row, col, self.game.get_chessboard(), self.chess_color[self.turn], self.game.get_turn_taken())
                     if is_valid_move:
                         # 如果是合法落子，保存状态并更新棋盘
-                        self.caretaker.save_memento(self.game.create_memento())
-                        self.game.make_move(row=row, col=col, curr_turn=self.chess_color[self.turn])
+                        self.make_move(row, col)
                         self.game.set_skip_last_turn(self.chess_color[self.turn], False)  # 围棋中取消跳过落子标记
                         self.next_turn()
                     elif self.UI_platform.admit_defeat(mouse_pos=event_val):
@@ -250,17 +250,35 @@ class Client():
                         if self.game.get_turn_taken():  # 玩家只能在自己行棋之前存储局面
                             self.UI_platform.pop_message("You can only Store State before taking move.")
                             continue
-                        file_dir = self.UI_platform.select_file(is_store=True)
-                        message = self.game.store_state(file_dir, self.turn)
+                        file_path = self.UI_platform.select_file(is_store=True)
+                        message = self.game.store_state(file_path, self.turn, self.caretaker.memento_list)
                         self.UI_platform.pop_message(message)
                     elif self.UI_platform.load_state(mouse_pos=event_val):
                         # 玩家请求加载历史局面
                         if self.game.get_turn_taken():  # 玩家只能在自己行棋之前加载历史局面
                             self.UI_platform.pop_message("You can only Load State before taking move.")
                             continue
-                        file_dir = self.UI_platform.select_file(is_store=False)
-                        message = self.game.load_state(file_dir, self.turn)
+                        file_path = self.UI_platform.select_file(is_store=False)
+                        is_valid, message = self.game.load_state(file_path, self.turn, playback=False)
                         self.UI_platform.pop_message(message)
+                    elif self.UI_platform.playback(mouse_pos=event_val):
+                        # 玩家请求回放历史局面
+                        file_path = self.UI_platform.select_file(is_store=False)
+                        is_valid, _ = self.game.load_state(file_path, self.turn, playback=True)
+                        if not is_valid:
+                            message = _
+                            self.UI_platform.pop_message(message)
+                        else:
+                            chessboards = _
+                            temp_chessboard = Chessboard(self.game.chessboard.get_size())
+                            turn = 0
+                            for chessboard in chessboards:
+                                temp_chessboard.set_board(chessboard)
+                                self.UI_platform.display_chessboard(chessboard=temp_chessboard, turn=self.chess_color[turn], player_name=self.players[turn].name, games=self.players[turn].games, wins=self.players[turn].wins)
+                                turn = 1 - turn
+                                time.sleep(1)
+                            self.UI_platform.pop_message("Playback finished.")
+                                
                     elif self.UI_platform.capture(mouse_pos=event_val):
                         # 围棋玩家请求提子
                         message = self.game.capture()

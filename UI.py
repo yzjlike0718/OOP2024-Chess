@@ -39,6 +39,7 @@ class UITemplate():
         self.button_capture = None  # "提子" 按钮
         self.button_end_turn = None  # "结束回合" 按钮
         self.button_hint = None  # "提示" 按钮
+        self.button_playback = None  # "回放" 按钮
         
         self.AI_available = False  # 是否提供 AI 玩家
         self.valid_chessboard_size: list[str] = None  # 可选的棋盘大小
@@ -447,6 +448,14 @@ class UITemplate():
         """
         return self.button_hint.collidepoint(mouse_pos)
     
+    def playback(self, mouse_pos: tuple[int, int]) -> bool:
+        """
+        判断是否点击了“回放”按钮。
+        :param mouse_pos (tuple[int, int]): 鼠标的 (x, y) 坐标位置。
+        :return bool: 如果鼠标位置与“回放”按钮发生碰撞，则返回 True；否则返回 False。
+        """
+        return self.button_playback.collidepoint(mouse_pos)
+    
     def pop_message(self, message: str, text_color=RED):
         if message is None:
             return
@@ -501,10 +510,10 @@ class UITemplate():
                         if button_rect.collidepoint(rel_x, rel_y):
                             running = False
 
-            # 绘制背景覆盖主界面
-            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 180))  # 半透明黑色
-            self.screen.blit(overlay, (0, 0))
+            # # 绘制背景覆盖主界面
+            # overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+            # overlay.fill((0, 0, 0, 180))  # 半透明黑色
+            # self.screen.blit(overlay, (0, 0))
 
             # 绘制浮窗
             self.popup_surface.fill(WHITE)
@@ -741,6 +750,14 @@ class GomokuUI(UITemplate):
             GRID_SIZE + 6 * BUTTON_INTERVAL, 
             update=False
         )
+        
+        # 绘制 "回放" 按钮
+        self.button_playback = self.draw_button(
+            "Playback", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 7 * BUTTON_INTERVAL, 
+            update=False
+        )
                 
         # 更新屏幕显示
         pygame.display.flip()
@@ -845,6 +862,14 @@ class GoUI(UITemplate):
             GRID_SIZE + 8 * BUTTON_INTERVAL, 
             update=False
         )
+        
+        # 绘制 "回放" 按钮
+        self.button_playback = self.draw_button(
+            "Playback", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 9 * BUTTON_INTERVAL, 
+            update=False
+        )
                 
         # 更新屏幕显示
         pygame.display.flip()
@@ -928,6 +953,14 @@ class OthelloUI(UITemplate):
             "View Hints", 
             COMMON_BUTTON_LEFT, 
             GRID_SIZE + 6 * BUTTON_INTERVAL, 
+            update=False
+        )
+        
+        # 绘制 "回放" 按钮
+        self.button_playback = self.draw_button(
+            "Playback", 
+            COMMON_BUTTON_LEFT, 
+            GRID_SIZE + 7 * BUTTON_INTERVAL, 
             update=False
         )
                 
