@@ -109,10 +109,14 @@ class Client():
                 else:
                     self.winner = self.players[1].name
                 self.update_account_info()
+                self.UI_platform.display_chessboard(self.game.get_chessboard(), self.chess_color[self.turn], self.players[self.turn].name, self.players[self.turn].games, self.players[self.turn].wins)
+                time.sleep(1)
                 self.UI_platform.show_winner(self.winner)
                 self.play_game()
             elif self.game.rule.check_draw(self.game.get_chessboard()):  # 平局情况
                 self.update_account_info()
+                self.UI_platform.display_chessboard(self.game.get_chessboard(), self.chess_color[self.turn], self.players[self.turn].name, self.players[self.turn].games, self.players[self.turn].wins)
+                time.sleep(1)
                 self.UI_platform.show_winner(None)
                 self.play_game()
                 
@@ -237,6 +241,7 @@ class Client():
                         # 玩家认输
                         self.winner = self.players[1 - self.turn].name
                         self.UI_platform.show_winner(self.winner)
+                        self.update_account_info()
                         self.play_game()
                     elif self.UI_platform.restart(mouse_pos=event_val):
                         # 重新开始游戏

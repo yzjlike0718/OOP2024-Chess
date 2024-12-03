@@ -45,10 +45,11 @@ class Caretaker:
         :return: 回退后的棋盘状态备忘录（Memento 对象），如果记录不足则返回 None。
         """
         # 检查是否有足够的历史记录
-        if len(self.memento_list) < 2:
-            # 如果记录不足两步，无法执行悔棋
+        if len(self.memento_list) < 3:
+            # 如果记录不足三步，无法执行悔棋
             return None
 
         # 依次回退两步
         self.memento_list.pop()  # 移除对手的最近一步棋
-        return self.memento_list.pop()  # 移除自己的最近一步棋，返回其之前的状态
+        self.memento_list.pop()  # 移除自己的最近一步棋，返回其之前的状态
+        return self.memento_list[-1]
